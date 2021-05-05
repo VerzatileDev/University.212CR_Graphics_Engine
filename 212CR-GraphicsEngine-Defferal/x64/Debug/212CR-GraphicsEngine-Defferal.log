@@ -1,0 +1,7 @@
+﻿  Main.cpp
+C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\Main.cpp(29,15): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\Main.cpp(45,28): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\Main.cpp(47,24): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\Main.cpp(56,28): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\Main.cpp(59,24): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+  212CR-GraphicsEngine-Defferal.vcxproj -> C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\x64\Debug\212CR-GraphicsEngine-Defferal.exe
