@@ -1,4 +1,7 @@
-#version 430 core // Letting us Know which Version it is set.
+#version 430 core
+
+/* Objects definitions */
+
 
 /* See Documentation <https://learnopengl.com/Getting-started/Shaders> */
 
@@ -12,6 +15,8 @@ uniform mat4 modelViewMat;
 
 //Pass to fragmentShader 
 out vec4 colorsExport;
+
+vec4 coords;
 
 void main(void)
 {

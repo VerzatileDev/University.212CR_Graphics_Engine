@@ -1,9 +1,11 @@
 // Lib used.
+#include <cmath>
 #include <iostream> // Output 
 #include <fstream> // Reading Files
-#include <glm/glm.hpp> // GLM Lib
-#include <glm/gtc/type_ptr.hpp> // MAt4 Value Pointer
-#include <vector> 
+#include <glm/glm.hpp>// MAT4
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>// MAt4 Value Pointer
+#include <glm/gtc/matrix_inverse.hpp>
 
 /* Libraries for Apple and Pc*/
 #ifdef __APPLE__ // In order for this code to be used on different Operating systems
@@ -13,77 +15,58 @@
 #else
 #  include <GL/glew.h>
 #  include <GL/freeglut.h>
-
 #pragma comment(lib, "glew32.lib") 
 #endif
 
 
+/* Header Files to be Included */
+
+#include "readshaders.h"
+#include "vertex.h"
+
+
+/* <https://codeyarns.com/tech/2015-09-14-how-to-check-error-in-glew.html>*/
+// Error Checking For GLEW, if glewInit() does not return Glew_OK
+#define GLEW_OK 0
+#define GLEW_NO_ERROR 0
+#define GLEW_ERROR_NO_GL_VERSION 1  /* GL version could not be found*/
+#define GLEW_ERROR_GL_VERSION_10_ONLY 2  /* Specifies that a minimum of OpenGL 1.1 is required */
+#define GLEW_ERROR_GLX_VERSION_11_ONLY 3  /*  Specifies that a minimum of GLX 1.2 is required*/
+
 /* Global Variables*/
 
-/* Define Vertex and Colour Data*/
-struct Vertex
+/* VAO and VBO ids*/
+// Check for  warning C4091: Later,  
+// declares object, with types of objects.
+static enum object { FIELD, SKY, SPHERE }; // VAO ids.
+static enum buffer { FIELD_VERTICES, SKY_VERTICES, SPHERE_VERTICES, SPHERE_INDICES}; // VBO ids.
+
+// Specifies a field to render 
+static Vertex fieldVertices[] =
 {
-	float coords[4];
-	float colours[4];
+	{glm::vec4(100.0, 0.0, 100.0, 1.0), glm::vec2(1.0, 0.0)},
+	{glm::vec4(100.0, 0.0, -100.0, 1.0), glm::vec2(1.0, 8.0)},
+	{glm::vec4(-100.0, 0.0, 100.0, 1.0), glm::vec2(1.0, 0.0)},
+	{glm::vec4(-100.0, 0.0, -100.0, 1.0), glm::vec2(1.0, 8.0)}
 };
 
-//  Includes colour and Vertex data Together
-Vertex squareVertices[] =
-{
-	{ { 20.0, 20.0, 0.0, 1.0 },{ 0.0, 0.0, 0.0, 1.0 } },
-	{ { 80.0, 20.0, 0.0, 1.0 },{ 0.0, 0.0, 0.0, 1.0 } },
-	{ { 20.0, 80.0, 0.0, 1.0 },{ 0.0, 0.0, 0.0, 1.0 } },
-	{ { 80.0, 80.0, 0.0, 1.0 },{ 0.0, 0.0, 0.0, 1.0 } }
-};
-Vertex triangleVertices[] =
-{
-
-	{ { 30.0, 30.0, 1.0, 1.0 },{ 1.0, 0.0, 1.0, 1.0 } },
-	{ { 70.0, 30.0, 1.0, 1.0 },{ 1.0, 0.0, 1.0, 1.0 } },
-	{ { 30.0, 70.0, 1.0, 1.0 },{ 1.0, 0.0, 1.0, 1.0 } }
-};
 
 // Used in Definition of the camera. With ModelViewMat and ProjMat
-glm::mat4 modelViewMat(1.0f);
-glm::mat4 projMat(1.0f);
+static glm::mat4 modelViewMat(1.0f);
+static glm::mat4 projMat(1.0f);
+
+// Normalization of Camera
+static glm::mat3 normalMat = glm::mat3(1.0);
 
 //Program Location " Used to Set Shaders and Send Data for them.,
-unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc;
+unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc;
 
-/* BUFFERS and VAO */
-unsigned int buffer[2]; // AMount of object currently nessecary for the buffer.
-unsigned int vao[2]; // Will hold ( Square, Triangle )  Array of VAO IDS.  | Requires Binding |
+/* VBO (BUFFER) VAO and textures */
+unsigned int buffer[3]; // AMount of object currently nessecary for the buffer.
+unsigned int vao[3]; // Will hold ( Square, Triangle )  Array of VAO IDS.  | Requires Binding |
+unsigned int texture[2]; // Amount of Textures present
 
-////////////////////////////////////////////
-/*  MOVE INTO SEPERATE FILE  Header */
 
-/* Shader Document Loading function and Checking*/
-char* readTextFile(const char* aTextFile)
-{
-	FILE* filePointer;
-	fopen_s(&filePointer, aTextFile, "rb");
-	char* content = NULL;
-	long numVal = 0;
-
-	fseek(filePointer, 0L, SEEK_END);
-	numVal = ftell(filePointer);
-	fseek(filePointer, 0L, SEEK_SET);
-	content = (char*)malloc((numVal + 1) * sizeof(char));
-	fread(content, 1, numVal, filePointer);
-	content[numVal] = '\0';
-	fclose(filePointer);
-	return content;
-}
-void shaderCompileTest(GLuint shader)
-{
-	GLint result = GL_FALSE;
-	int logLength; glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<GLchar> vertShaderError((logLength > 1) ? logLength : 1);
-	glGetShaderInfoLog(shader, logLength, NULL, &vertShaderError[0]);
-	std::cout << &vertShaderError[0] << std::endl;
-}
-//////////////////////////////////////////
 
 
 /* PROJECT's SETUP */
@@ -92,21 +75,20 @@ void setup(void)
 	// "Red, Green, Blue, Alpha " Specifies the values after colour Buffers are cleared, Default is 0"
 	glClearColor(1.0, 1.0, 1.0, 0.0); // Reset Colours 
 
-	// Establish shader program executable.  " Gets and Reads Fragment and Vertex Shader Files.
-	char* vertexShader = readTextFile("vertexShader.glsl");
-	vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShaderId, 1, (const char**)&vertexShader, NULL);
-	glCompileShader(vertexShaderId);
-	std::cout << "::: VERTEX SHADER :::" << std::endl;
-	shaderCompileTest(vertexShaderId);
+	
+	// If enabled, Clear buffer with GL_DEPTH_BUFFER_BIT
+   // stores fragments their z-values in the depth buffer if they 
+   // passed the depth test and discards fragments if they failed the depth test accordingly.
+	glEnable(GL_DEPTH_TEST);
 
-	char* fragmentShader = readTextFile("fragmentShader.glsl");
-	fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShaderId, 1, (const char**)&fragmentShader, NULL);
-	glCompileShader(fragmentShaderId);
-	std::cout << "::: FRAGMENT SHADER :::" << std::endl;
-	shaderCompileTest(fragmentShaderId);
+	// < https://stackoverflow.com/questions/28137027/why-do-i-need-glcleargl-depth-buffer-bit >
+	glDepthFunc(GL_LESS);
 
+	// Set from Shader.h  Create Shader Program Executable
+	vertexShaderId = setShader("vertex", "vertexShader.glsl");
+	fragmentShaderId = setShader("fragment", "fragmentShader.glsl");
+
+	/* Part of readShaders */
 	programId = glCreateProgram();
 	glAttachShader(programId, vertexShaderId);
 	glAttachShader(programId, fragmentShaderId);
@@ -118,16 +100,16 @@ void setup(void)
 	std::cout << " Generating VAO and Buffers" << std::endl;
 
 	// Generate 
-	glGenVertexArrays(2, vao); // VAO ids.
-	glGenBuffers(2, buffer); //buffer ids.
+	glGenVertexArrays(3, vao); // VAO ids.
+	glGenBuffers(3, buffer); // VBO (BUffer) ids.
 
 	// Bind First VAO and Buffer
 	std::cout << " Binding Object one" << std::endl;
-	glBindVertexArray(vao[0]); // Vao Buffer
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[0]); // Bind Vertex buffer
+	glBindVertexArray(vao[FIELD]); // Vao Buffer
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[FIELD_VERTICES]); // Bind Vertex buffer
 
 	// Reserve Space
-	glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(fieldVertices), fieldVertices, GL_STATIC_DRAW);
 
 	// Sets Singular Array of generic vertex Attribute Data
 	// Index - Specifies vertex Attribute to be Modified,
@@ -136,66 +118,52 @@ void setup(void)
 	// Normalized - GL_True When Fixed Point,  False when Accessed.
 	// Stride - Specofies the byte offset Between Consecutive generic Vertex Attributes (Default 0)
 	// Pointer - Specofies offset of first component. (Initial Value 0 ) GL_Array_buffer Target.
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(squareVertices[0]), 0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(squareVertices[0]), (GLvoid*)sizeof(squareVertices[0].coords));
-	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), 0);
+
+	// index - Specifies the index of the generic vertex attribute to be enabled or disabled.
+	glEnableVertexAttribArray(0);// Enables or disables a generic vertex attribute array Values of 1, 0  True or false.
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), (void*)(sizeof(fieldVertices[0].coords)));
+	glEnableVertexAttribArray(1); // Cast to 1 === True 
 
 
-   // Bind Second VAO and Buffer
-	std::cout << " Binding Object two" << std::endl;
-	glBindVertexArray(vao[1]); // Increase with each object 
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[1]);  // Increase with each object 
-
-	// Triangle
-	glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(triangleVertices[0]), 0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(triangleVertices[0]), (GLvoid*)sizeof(triangleVertices[0].coords));
-	glEnableVertexAttribArray(1);
-
-
-	// Projection MAtrix Uniform  * Location and Set Value *
-	glm::mat4 projMat =
-	{
-		0.02, 0.0,  0.0, -1.0,
-		0.0,  0.02, 0.0, -1.0,
-		0.0,  0.0, -1.0,  0.0,
-		0.0,  0.0,  0.0,  1.0
-	};
-	/////////////////////////////////////////
-	// Obtain ModelView matrix uniform Location and set value.
+	
+	// Obatains Projection MAtrix Uniform  * Location and Set Value *
 	projMatLoc = glGetUniformLocation(programId, "projMat");
-	glUniformMatrix4fv(projMatLoc, 1, GL_TRUE, glm::value_ptr(projMat));
-	glm::mat4 modelViewMat(1.0f);
-	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat");
-	glUniformMatrix4fv(modelViewMatLoc, 1, GL_TRUE, glm::value_ptr(modelViewMat));
-	////////////////////////////////////////
+
+	// < https://glm.g-truc.net/0.9.4/api/a00151.html > Glm Lib Reference
+    // Dictates frustum Parameters, LEft, Right, Bottom, TOp, near, Far
+
+	projMat = glm::frustum(-5.0, 5.0, -5.0, 5.0, 5.0, 100.0);
+
+	//< https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glUniform.xml > 
+	glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat));
+
+	// Obtain modelview matrix uniform and object uniform locations.
+	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat"); // ModelViewMatrix
+	objectLoc = glGetUniformLocation(programId, "object");             // Unform Object
 }
 
 /* Scene Drawables Routine*/
 void drawScene(void)
 {
 	/*Indicates which Values are to be Cleared  " Takes one or Several Values"*/
-	glClear(GL_COLOR_BUFFER_BIT);
-	/* Defines the Color of the Element*/
+	// Clear Colour Buffers at the start of the Frame 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	// Calculate and update modelview matrix.
+	modelViewMat = glm::mat4(1.0);
+	modelViewMat = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0, 10.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat));
 
-	// Bind first VAO *object one*
-	glBindVertexArray(vao[0]);
 
 	// Debug Commenting.
-	std::cout << " Drawing Strip Gl Triangle for VBO" << std::endl;
-
-	//Draw Gl/Triangle strip  using 4 vertices in the VBO
+	std::cout << " Intializing Field" << std::endl;
+	glUniform1ui(objectLoc, FIELD);  //if (object == FIELD)
+	glBindVertexArray(vao[FIELD]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	// Bind Second VAO  *object two*
-	glBindVertexArray(vao[1]);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-
-	// Force Execution of Gl commands that are in limited in size or extent (Finite) time
-	glFlush();  // Empties Buffers, " before it waits for User Input.. that depends on the generated image.
+	glutSwapBuffers(); // Change buffers when the current window is double buffered.
 }
 
 
@@ -217,14 +185,6 @@ void resize(int w, int h)
 
 	//The initial display mode is used when creating top - level windows, subwindows, and overlays to determine the OpenGL display mode for the to - be - created window or overlay.
 	//glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH);
-
-	/* set up depth-buffering */
-	//glEnable(GL_DEPTH_TEST);
-	/* turn on default lighting */
-	//glEnable(GL_LIGHTING);
-	//glEnable(GL_LIGHT0);
-	//gluPerspective(40, 1, 4, 20);
-
 
 	glOrtho(0.0, 100.0, 0.0, 100.0, -1.0, 1.0); // multiplies the current matrix by an orthographic matrix
 	glMatrixMode(GL_MODELVIEW);
@@ -257,21 +217,31 @@ int main(int argc, char** argv)
 	glutInit(&argc, argv);  // Initializes GLUT library and negotiates a session with Window System
 
 	/* Documentation from <http://freeglut.sourceforge.net/docs/api.php>*/
-	glutInitContextVersion(4, 3);
-	glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE);
+	glutInitContextVersion(4, 3); // Version 4.3
+	// <https://sites.google.com/site/gsucomputergraphics/educational/initialization-tasks-in-an-opengl-program/opengl-context-and-profile>
+	glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE); 
 
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowSize(1080, 920); // original Size 500, 500 Display Window size
 	glutInitWindowPosition(500, 50); // Specifies the location of the Window 500, 50 Centre Of screen.
 	glutCreateWindow("Graphics Engine Alpha v0.1");
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(resize);
-	//glutIdleFunc(animate);   // Animation Proccessing
+	//glutIdleFunc(animate); // Animation Proccessing
 	glutKeyboardFunc(keyInput); // Process ACII keys
 	glutSpecialFunc(specialKeyInput); // Process Non ACII Keys.
 
 	glewExperimental = GL_TRUE;
 	glewInit(); // Returns Error Value of a type GLenum " Checks For Error " <https://codeyarns.com/tech/2015-09-14-how-to-check-error-in-glew.html>
+
+	// Tells Errors encountered by glewInit()
+
+	const GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		std::cout << "GLEW Error: " << glewGetErrorString(err) << std::endl;
+		exit(1);
+	}
 
 	setup(); // Intitalize setup proceedure 
 
