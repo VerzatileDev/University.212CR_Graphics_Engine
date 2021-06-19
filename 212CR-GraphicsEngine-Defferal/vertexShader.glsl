@@ -1,28 +1,33 @@
 #version 430 core
 
-/* Objects definitions */
-
-
 /* See Documentation <https://learnopengl.com/Getting-started/Shaders> */
 
+/* Objects definitions */
+#define FIELD 0
+
+
 //Locations of Data Sent Via glVertexAttribPointer And Activated by glEnableVertexAttribArray
-layout(location=0) in vec4 squareCoords;
-layout(location=1) in vec4 squareColors;
+layout(location=0) in vec4 Coords;
+layout(location=1) in vec2 TexCoords;
 
 // Uniform Pass by glUniformMatrix4fv
-uniform mat4 projMat;
 uniform mat4 modelViewMat;
+uniform mat4 projMat;
+uniform uint object;
 
 //Pass to fragmentShader 
-out vec4 colorsExport;
+out vec2 texCoordsExport;
+out vec3 normalExport;
 
 vec4 coords;
 
 void main(void)
 {
-   //gl_Position is internal to the shader containing the position of the current vertex
-   gl_Position = projMat * modelViewMat * squareCoords;
-
-   // Send Colour to FragmentShader.glsl
-   colorsExport = squareColors;
+   if (object == FIELD)
+   {
+      coords = Coords;
+      texCoordsExport = TexCoords;
+   }
+   
+   gl_Position = projMat * modelViewMat * coords;
 }

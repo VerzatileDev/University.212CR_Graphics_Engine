@@ -3,7 +3,7 @@
 #include <iostream> // Output 
 #include <fstream> // Reading Files
 #include <glm/glm.hpp>// MAT4
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp> // Lookat func
 #include <glm/gtc/type_ptr.hpp>// MAt4 Value Pointer
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -38,10 +38,10 @@
 /* VAO and VBO ids*/
 // Check for  warning C4091: Later,  
 // declares object, with types of objects.
-static enum object { FIELD, SKY, SPHERE }; // VAO ids.
-static enum buffer { FIELD_VERTICES, SKY_VERTICES, SPHERE_VERTICES, SPHERE_INDICES}; // VBO ids.
+static enum object { FIELD }; // VAO ids.
+static enum buffer { FIELD_VERTICES}; // VBO ids.
 
-// Specifies a field to render 
+// Specifies a field to render  And its coordinates 
 static Vertex fieldVertices[] =
 {
 	{glm::vec4(100.0, 0.0, 100.0, 1.0), glm::vec2(1.0, 0.0)},
@@ -62,9 +62,9 @@ static glm::mat3 normalMat = glm::mat3(1.0);
 unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc;
 
 /* VBO (BUFFER) VAO and textures */
-unsigned int buffer[3]; // AMount of object currently nessecary for the buffer.
-unsigned int vao[3]; // Will hold ( Square, Triangle )  Array of VAO IDS.  | Requires Binding |
-unsigned int texture[2]; // Amount of Textures present
+unsigned int buffer[3]; // objects nessecary for buffer.
+unsigned int vao[3]; //  | Requires Binding |
+unsigned int texture[2]; // Textures present
 
 
 
@@ -140,13 +140,13 @@ void setup(void)
 
 	// Obtain modelview matrix uniform and object uniform locations.
 	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat"); // ModelViewMatrix
-	objectLoc = glGetUniformLocation(programId, "object");             // Unform Object
+	objectLoc = glGetUniformLocation(programId, "object");             // Uniform Object
 }
 
 /* Scene Drawables Routine*/
 void drawScene(void)
 {
-	/*Indicates which Values are to be Cleared  " Takes one or Several Values"*/
+	/* Indicates which Values are to be Cleared  " Takes one/ Several Values" */
 	// Clear Colour Buffers at the start of the Frame 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -169,7 +169,7 @@ void drawScene(void)
 
 
 /* ANIMATION ROUTINE*/
-void animate() {
+void animation() {
 
 	/* update state variables */
 	/* refresh screen */
@@ -227,7 +227,7 @@ int main(int argc, char** argv)
 	glutCreateWindow("Graphics Engine Alpha v0.1");
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(resize);
-	//glutIdleFunc(animate); // Animation Proccessing
+	//glutIdleFunc(animation);
 	glutKeyboardFunc(keyInput); // Process ACII keys
 	glutSpecialFunc(specialKeyInput); // Process Non ACII Keys.
 
