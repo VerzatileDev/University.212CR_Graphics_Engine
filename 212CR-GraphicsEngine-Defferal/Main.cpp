@@ -23,6 +23,7 @@
 
 #include "readshaders.h"
 #include "vertex.h"
+#include "sphere.h"
 
 
 /* <https://codeyarns.com/tech/2015-09-14-how-to-check-error-in-glew.html>*/
@@ -36,59 +37,111 @@
 /* Global Variables*/
 
 /* VAO and VBO ids*/
-// Check for  warning C4091: Later,  
+
 // declares object, with types of objects.
-static enum object { FIELD }; // VAO ids.
-static enum buffer { FIELD_VERTICES}; // VBO ids.
+static enum object { FIELD, SKY, SPHERE }; // VAO ids.
+static enum buffer { FIELD_VERTICES, SKY_VERTICES, SPHERE_VERTICES, SPHERE_INDICES };
+
+/* Sphere Vertices, Normals, Triangle indices */
+static VertexWtihNormal* sphereVerticesNor = NULL;
+static unsigned int* sphereIndices = NULL;
+static Sphere Sphere1;
 
 // Specifies a field to render  And its coordinates 
 static Vertex fieldVertices[] =
 {
-	{glm::vec4(100.0, 0.0, 100.0, 1.0), glm::vec2(1.0, 0.0)},
-	{glm::vec4(100.0, 0.0, -100.0, 1.0), glm::vec2(1.0, 8.0)},
-	{glm::vec4(-100.0, 0.0, 100.0, 1.0), glm::vec2(1.0, 0.0)},
-	{glm::vec4(-100.0, 0.0, -100.0, 1.0), glm::vec2(1.0, 8.0)}
+	{glm::vec4(100.0, 0.0, 100.0, 1.0), glm::vec2(8.0, 0.0)},
+	{glm::vec4(100.0, 0.0, -100.0, 1.0), glm::vec2(8.0, 8.0)},
+	{glm::vec4(-100.0, 0.0, 100.0, 1.0), glm::vec2(0.0, 0.0)},
+	{glm::vec4(-100.0, 0.0, -100.0, 1.0), glm::vec2(0.0, 8.0)}
 };
 
+
+/* Lighting */
+struct Material
+{
+	vec4 ambRefl;
+	vec4 difRefl;
+	vec4 specRefl;
+	vec4 emitCols;
+	float shininess;
+};
+
+struct Light
+{
+	vec4 ambCols;
+	vec4 difCols;
+	vec4 specCols;
+	vec4 coords;
+};
+
+static const vec4 globAmb = vec4(0.2, 0.2, 0.2, 1.0);
+
+/* Material properties of a Sphere */
+static const Material sphereFandB =
+{
+	vec4(1.0, 1.0, 0.0, 1.0),
+	vec4(1.0, 1.0, 0.0, 1.0),
+	vec4(1.0, 1.0, 0.0, 1.0),
+	vec4(0.0, 0.0, 0.0, 1.0),
+	50.0f
+};
+
+static const Light light0 =
+{
+	vec4(0.0, 0.0, 0.0, 1.0),
+	vec4(1.0, 1.0, 1.0, 1.0),
+	vec4(1.0, 1.0, 1.0, 1.0),
+	vec4(1.0, 1.0, 0.0, 0.0)
+};
+
+/* Sphere Z position Coordinate */
+
+static float SphereZ = 0;
+
+/* CAMERA */
+static float CamPosX = 0.0;
+static float CamPosY = 0.0;
 
 // Used in Definition of the camera. With ModelViewMat and ProjMat
 static glm::mat4 modelViewMat(1.0f);
 static glm::mat4 projMat(1.0f);
-
 // Normalization of Camera
 static glm::mat3 normalMat = glm::mat3(1.0);
 
 //Program Location " Used to Set Shaders and Send Data for them.,
 unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc;
 
+
 /* VBO (BUFFER) VAO and textures */
-unsigned int buffer[3]; // objects nessecary for buffer.
-unsigned int vao[3]; //  | Requires Binding |
-unsigned int texture[2]; // Textures present
+unsigned int buffer[3];
+unsigned int vao[3];
+unsigned int texture[2];
 
 
 
-
-/* PROJECT's SETUP */
+/* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
 {
 	// "Red, Green, Blue, Alpha " Specifies the values after colour Buffers are cleared, Default is 0"
-	glClearColor(1.0, 1.0, 1.0, 0.0); // Reset Colours 
+	glClearColor(1.0, 1.0, 1.0, 0.0);
 
 	
 	// If enabled, Clear buffer with GL_DEPTH_BUFFER_BIT
    // stores fragments their z-values in the depth buffer if they 
    // passed the depth test and discards fragments if they failed the depth test accordingly.
 	glEnable(GL_DEPTH_TEST);
-
 	// < https://stackoverflow.com/questions/28137027/why-do-i-need-glcleargl-depth-buffer-bit >
 	glDepthFunc(GL_LESS);
+
+
 
 	// Set from Shader.h  Create Shader Program Executable
 	vertexShaderId = setShader("vertex", "vertexShader.glsl");
 	fragmentShaderId = setShader("fragment", "fragmentShader.glsl");
 
-	/* Part of readShaders */
+	/* ReadShaders Fragment and Vertex */
+	std::cout << " Establishing Shaders " << std::endl;
 	programId = glCreateProgram();
 	glAttachShader(programId, vertexShaderId);
 	glAttachShader(programId, fragmentShaderId);
@@ -96,20 +149,31 @@ void setup(void)
 	glUseProgram(programId);
 
 
+	/* Sphere Lighting See Properties */
+	glUniform4fv(glGetUniformLocation(programId, "sphereFandB.ambRefl"), 1, &sphereFandB.ambRefl[0]);
+	glUniform4fv(glGetUniformLocation(programId, "sphereFandB.difRefl"), 1, &sphereFandB.difRefl[0]);
+	glUniform4fv(glGetUniformLocation(programId, "sphereFandB.specRefl"), 1, &sphereFandB.specRefl[0]);
+	glUniform4fv(glGetUniformLocation(programId, "sphereFandB.emitCols"), 1, &sphereFandB.emitCols[0]);
+	glUniform1f(glGetUniformLocation(programId, "sphereFandB.shininess"), sphereFandB.shininess);
+
+	glUniform4fv(glGetUniformLocation(programId, "globAmb"), 1, &globAmb[0]);
+	glUniform4fv(glGetUniformLocation(programId, "light0.ambCols"), 1, &light0.ambCols[0]);
+	glUniform4fv(glGetUniformLocation(programId, "light0.difCols"), 1, &light0.difCols[0]);
+	glUniform4fv(glGetUniformLocation(programId, "light0.specCols"), 1, &light0.specCols[0]);
+	glUniform4fv(glGetUniformLocation(programId, "light0.coords"), 1, &light0.coords[0]);
+
 	/* VBO */
-	std::cout << " Generating VAO and Buffers" << std::endl;
+	std::cout << " Generating VAO and Buffers " << std::endl;
 
-	// Generate 
-	glGenVertexArrays(3, vao); // VAO ids.
-	glGenBuffers(3, buffer); // VBO (BUffer) ids.
+	// Generate VAO and VBO ( Buffer ) ID's
+	glGenVertexArrays(3, vao);
+	glGenBuffers(3, buffer);
 
-	// Bind First VAO and Buffer
-	std::cout << " Binding Object one" << std::endl;
-	glBindVertexArray(vao[FIELD]); // Vao Buffer
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[FIELD_VERTICES]); // Bind Vertex buffer
-
-	// Reserve Space
-	glBufferData(GL_ARRAY_BUFFER, sizeof(fieldVertices), fieldVertices, GL_STATIC_DRAW);
+	// Binding Field 
+	std::cout << " Binding VAO and VBO" << std::endl;
+	glBindVertexArray(vao[FIELD]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[FIELD_VERTICES]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(fieldVertices), fieldVertices, GL_STATIC_DRAW); // Reserve Space
 
 	// Sets Singular Array of generic vertex Attribute Data
 	// Index - Specifies vertex Attribute to be Modified,
@@ -125,18 +189,31 @@ void setup(void)
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), (void*)(sizeof(fieldVertices[0].coords)));
 	glEnableVertexAttribArray(1); // Cast to 1 === True 
 
+	/* Sphere Vertex Data */
+	int verCount, triCount;
+	sphereVerticesNor = Sphere1.GetVerData(verCount);
+	sphereIndices = Sphere1.GetTriData(triCount);
+
+	/* Sphere Binding */
+	glBindVertexArray(vao[SPHERE]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[SPHERE_VERTICES]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexWtihNormal) * verCount, sphereVerticesNor, GL_STATIC_DRAW);  ///please note the change
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer[SPHERE_INDICES]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * triCount, sphereIndices, GL_STATIC_DRAW); ///please note the change
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), 0);  //layout(location=4) in vec4 fieldCoords;
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
+	glEnableVertexAttribArray(3);
 
 	
-	// Obatains Projection MAtrix Uniform  * Location and Set Value *
-	projMatLoc = glGetUniformLocation(programId, "projMat");
-
-	// < https://glm.g-truc.net/0.9.4/api/a00151.html > Glm Lib Reference
-    // Dictates frustum Parameters, LEft, Right, Bottom, TOp, near, Far
-
+	////////////////////////////////////////////////////////////////////
+	// Obtain projection matrix uniform location and set value.
+	projMatLoc = glGetUniformLocation(programId, "projMat"); //uniform mat4 projMat;
 	projMat = glm::frustum(-5.0, 5.0, -5.0, 5.0, 5.0, 100.0);
-
-	//< https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glUniform.xml > 
-	glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat));
+	// < https://glm.g-truc.net/0.9.4/api/a00151.html > Glm Lib Reference
+	// Dictates frustum Parameters, LEft, Right, Bottom, TOp, near, Far
+	
+	glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat)); //< https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glUniform.xml > 
 
 	// Obtain modelview matrix uniform and object uniform locations.
 	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat"); // ModelViewMatrix
@@ -156,11 +233,27 @@ void drawScene(void)
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat));
 
 
-	// Debug Commenting.
-	std::cout << " Intializing Field" << std::endl;
+	/* FIELD Bind And Shader intilization for colour*/
 	glUniform1ui(objectLoc, FIELD);  //if (object == FIELD)
-	glBindVertexArray(vao[FIELD]);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(vao[FIELD]);         // Bind
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // Render Array of triangles 
+
+
+	/* SPHERE */
+	int triCount;
+	sphereIndices = Sphere1.GetTriData(triCount);
+
+	/* Sphere Animation */
+
+	modelViewMat = mat4(1.0);
+	modelViewMat = lookAt(vec3(0.0, 10.0, 15.0), vec3(0.0 + CamPosX, 10.0 + CamPosY, 0.0), vec3(0.0, 1.0, 0.0)); // Apply modelview
+	modelViewMat = translate(modelViewMat, Sphere1.GetPosition()); // Sets Sphere's Position and modifies modelview matrix
+	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat)); // Send to shader 
+	
+	/* SPHERE Binding */
+	glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
+	glBindVertexArray(vao[SPHERE]);
+	glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
 
 
 	glutSwapBuffers(); // Change buffers when the current window is double buffered.
@@ -172,6 +265,12 @@ void drawScene(void)
 void animation() {
 
 	/* update state variables */
+	/* SPHERE */
+	SphereZ = SphereZ - 0.2;
+	if (SphereZ < -25.0) SphereZ = 0.0;
+	Sphere1.SetPosition(vec3(0, 0, SphereZ));
+
+
 	/* refresh screen */
 	glutPostRedisplay();
 }
@@ -208,6 +307,24 @@ void specialKeyInput(int key, int x, int y)
 {
 	//https://www.opengl.org/resources/libraries/glut/spec3/node54.html
 
+	// Move Camera Intiliazes CamPos with modelViewMat = lookat( ..  Under Sphere Animation
+	if (key == GLUT_KEY_LEFT)
+	{
+		if (CamPosX > -50.0) CamPosX -= 0.5; // Change State By when True X Coord Camera
+	}
+	if (key == GLUT_KEY_RIGHT)
+	{
+		if (CamPosX < 15.0) CamPosX += 0.5;
+	}
+	if (key == GLUT_KEY_UP)
+	{
+		if (CamPosY < 15.0) CamPosY += 0.5; // Change State By when True Y Coord Camera
+		
+	}
+	if (key == GLUT_KEY_DOWN)
+	{
+		if (CamPosY > -50.0) CamPosY -= 0.5;
+	}
 }
 
 
@@ -227,7 +344,7 @@ int main(int argc, char** argv)
 	glutCreateWindow("Graphics Engine Alpha v0.1");
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(resize);
-	//glutIdleFunc(animation);
+	glutIdleFunc(animation);
 	glutKeyboardFunc(keyInput); // Process ACII keys
 	glutSpecialFunc(specialKeyInput); // Process Non ACII Keys.
 

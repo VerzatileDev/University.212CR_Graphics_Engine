@@ -1,23 +1,68 @@
 #version 430 core
 
+// THese have to be In order See Main.cpp |static enum object| and | static enum buffer|
 #define FIELD 0
+#define SKY 1
+#define SPHERE 2
 
-//Recived from vertex shader.
+// https://learnopengl.com/Getting-started/Shaders
+// Recived From Vertex Shader 
 in vec2 texCoordsExport;
 in vec3 normalExport;
 
+// Sphere Lighting 
+struct Light
+{
+   vec4 ambCols;
+   vec4 difCols;
+   vec4 specCols;
+   vec4 coords;
+};
+
+struct Material
+{
+   vec4 ambRefl;
+   vec4 difRefl;
+   vec4 specRefl;
+   vec4 emitCols;
+   float shininess;
+};
+
+// Field  Object 
 uniform uint object;
+
+// Sphere Lighting 
+uniform Light light0;
+uniform vec4 globAmb;
+uniform Material sphereFandB;
+
 
 //Final colour of the pixel
 out vec4 colorsOut;
 
-vec4 fieldTexColor, skyTexColor;
+// Sphere Lighting 
+vec3 normal, lightDirection;
+vec4 fAndBDif;
+
+vec4 fieldTexColor;
 
 void main(void)
 {
    /* Colour Def */
    fieldTexColor = vec4(0.4,0.4,0.4,1.0);
 
-   if (object == FIELD) colorsOut = fieldTexColor;
+
+   if (object == FIELD) 
+   {
+   colorsOut = fieldTexColor;  // Used For Lighting Effects 
+   }
+   if (object == SPHERE) {
+	 normal = normalize(normalExport);
+	 lightDirection = normalize(vec3(light0.coords));
+	 fAndBDif = max(dot(normal, lightDirection), 0.0f) * (light0.difCols * sphereFandB.difRefl); 
+     colorsOut =  vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0); 
+
+    //colorsOut =  vec4(0.0,1.0,0.0, 1.0);  // Fixed Colour 
+   }
 
 }

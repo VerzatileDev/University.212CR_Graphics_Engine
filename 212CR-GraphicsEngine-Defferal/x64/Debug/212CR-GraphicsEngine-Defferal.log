@@ -1,4 +1,2 @@
-﻿  Main.cpp
-C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\Main.cpp(41,29): warning C4091: 'static ': ignored on left of 'object' when no variable is declared
-C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\Main.cpp(42,37): warning C4091: 'static ': ignored on left of 'buffer' when no variable is declared
+﻿  Sphere.cpp
   212CR-GraphicsEngine-Defferal.vcxproj -> C:\Users\Brian\Desktop\Semester2Year2\Defferal 212CR Graphics\9032499-212CR-Deferral\212CR-GraphicsEngine-Defferal\x64\Debug\212CR-GraphicsEngine-Defferal.exe
