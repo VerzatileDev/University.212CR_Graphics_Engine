@@ -39,8 +39,8 @@
 /* VAO and VBO ids*/
 
 // declares object, with types of objects.
-static enum object { FIELD, SKY, SPHERE }; // VAO ids.
-static enum buffer { FIELD_VERTICES, SKY_VERTICES, SPHERE_VERTICES, SPHERE_INDICES };
+static enum object { FIELD, CUBE, SPHERE, SKY }; // VAO ids.
+static enum buffer { FIELD_VERTICES, CUBE_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, SKY_INDICES};
 
 /* Sphere Vertices, Normals, Triangle indices */
 static VertexWtihNormal* sphereVerticesNor = NULL;
@@ -102,6 +102,48 @@ static float SphereZ = 0;
 /* CAMERA */
 static float CamPosX = 0.0;
 static float CamPosY = 0.0;
+
+
+int size = 4.0f;
+// TRIANGLE Verticiess Part of CUBE 
+static const float vertices[] = {
+	-size,-size,-size, // triangle 1 : begin
+	-size,-size, size,
+	-size, size, size, // triangle 1 : end
+	size, size,-size, // triangle 2 : begin
+	-size,-size,-size,
+	-size, size,-size, // triangle 2 : end
+	size,-size, size,
+	-size,-size,-size,
+	size,-size,-size,
+	size, size,-size,
+	size,-size,-size,
+	-size,-size,-size,
+	-size,-size,-size,
+	-size, size, size,
+	-size, size,-size,
+	size,-size, size,
+	-size,-size, size,
+	-size,-size,-size,
+	-size, size, size,
+	-size,-size, size,
+	size,-size, size,
+	size, size, size,
+	size,-size,-size,
+	size, size,-size,
+	size,-size,-size,
+	size, size, size,
+	size,-size, size,
+	size, size, size,
+	size, size,-size,
+	-size, size,-size,
+	size, size, size,
+	-size, size,-size,
+	-size, size, size,
+	size, size, size,
+	-size, size, size,
+	size,-size, size
+};
 
 // Used in Definition of the camera. With ModelViewMat and ProjMat
 static glm::mat4 modelViewMat(1.0f);
@@ -194,6 +236,14 @@ void setup(void)
 	sphereVerticesNor = Sphere1.GetVerData(verCount);
 	sphereIndices = Sphere1.GetTriData(triCount);
 
+	/* CUBE */
+	glBindVertexArray(vao[CUBE]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
 	/* Sphere Binding */
 	glBindVertexArray(vao[SPHERE]);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer[SPHERE_VERTICES]);
@@ -205,7 +255,8 @@ void setup(void)
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
 	glEnableVertexAttribArray(3);
 
-	
+
+
 	////////////////////////////////////////////////////////////////////
 	// Obtain projection matrix uniform location and set value.
 	projMatLoc = glGetUniformLocation(programId, "projMat"); //uniform mat4 projMat;
@@ -251,9 +302,15 @@ void drawScene(void)
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat)); // Send to shader 
 	
 	/* SPHERE Binding */
-	glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
-	glBindVertexArray(vao[SPHERE]);
-	glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
+	//glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
+	//glBindVertexArray(vao[SPHERE]);
+	//glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
+
+
+	/* CUBE DRaws TRIANGLE ATM */
+	glUniform1ui(objectLoc, CUBE); // If object == CUBE
+	glBindVertexArray(vao[CUBE]);
+	glDrawArrays(GL_TRIANGLES, 0, 12 * 3);
 
 
 	glutSwapBuffers(); // Change buffers when the current window is double buffered.
@@ -344,7 +401,7 @@ int main(int argc, char** argv)
 	glutCreateWindow("Graphics Engine Alpha v0.1");
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(resize);
-	glutIdleFunc(animation);
+	//glutIdleFunc(animation);
 	glutKeyboardFunc(keyInput); // Process ACII keys
 	glutSpecialFunc(specialKeyInput); // Process Non ACII Keys.
 

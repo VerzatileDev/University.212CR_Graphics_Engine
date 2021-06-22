@@ -2,8 +2,10 @@
 
 // THese have to be In order See Main.cpp |static enum object| and | static enum buffer|
 #define FIELD 0
-#define SKY 1
+#define CUBE 1
 #define SPHERE 2
+#define SKY 3
+
 
 // https://learnopengl.com/Getting-started/Shaders
 // Recived From Vertex Shader 
@@ -63,6 +65,10 @@ void main(void)
      colorsOut =  vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0); 
 
     //colorsOut =  vec4(0.0,1.0,0.0, 1.0);  // Fixed Colour 
+   }
+   if (object == CUBE)
+   {
+	  colorsOut = vec4(1.0,0.0,0.0,1.0); // Fixed Colour 
    }
 
 }
