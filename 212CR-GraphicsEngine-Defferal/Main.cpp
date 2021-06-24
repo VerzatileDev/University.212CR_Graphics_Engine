@@ -24,6 +24,7 @@
 #include "readshaders.h"
 #include "vertex.h"
 #include "sphere.h"
+#include "SOIL/SOIL.h" // Have it In Linker/Input  has to be before opengl links.
 
 
 /* <https://codeyarns.com/tech/2015-09-14-how-to-check-error-in-glew.html>*/
@@ -38,16 +39,16 @@
 
 /* VAO and VBO ids*/
 
-// declares object, with types of objects.
+// declares object, with types of objects. ( Have to be In order WIth Vertex/Fragment In #Define
 static enum object { FIELD, CUBE, SPHERE, SKY }; // VAO ids.
-static enum buffer { FIELD_VERTICES, CUBE_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, SKY_INDICES};
+static enum buffer { FIELD_VERTICES, CUBE_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, SKY_INDICES, SKY_VERTICES};
 
 /* Sphere Vertices, Normals, Triangle indices */
 static VertexWtihNormal* sphereVerticesNor = NULL;
 static unsigned int* sphereIndices = NULL;
 static Sphere Sphere1;
 
-// Specifies a field to render  And its coordinates 
+// FIELD Area Specification
 static Vertex fieldVertices[] =
 {
 	{glm::vec4(100.0, 0.0, 100.0, 1.0), glm::vec2(8.0, 0.0)},
@@ -56,6 +57,15 @@ static Vertex fieldVertices[] =
 	{glm::vec4(-100.0, 0.0, -100.0, 1.0), glm::vec2(0.0, 8.0)}
 };
 
+/* SKY Area Specification */
+static Vertex skyVertices[] =
+{
+	// Fixed picture orientation by Changing Top left with bottom right, top right with bottom left. Vec4
+	{vec4(-200.0, 120.0, -70.0, 1.0), vec2(1.0, 0.0)}, // Bottom right
+	{vec4(-200.0, 0.0, -70.0, 1.0), vec2(1.0, 1.0)},// Top rigt corner
+	{vec4(200.0, 120.0, -70.0, 1.0), vec2(0.0, 0.0)}, // bottom left
+	{vec4(200.0, 0.0, -70.0, 1.0), vec2(0.0, 1.0)} // Top left
+};
 
 /* Lighting */
 struct Material
@@ -104,15 +114,15 @@ static float CamPosX = 0.0;
 static float CamPosY = 0.0;
 
 
-int size = 4.0f;
-// TRIANGLE Verticiess Part of CUBE 
+int size = 4.0f; // Enables us to Set the Size of the Cube
+
 static const float vertices[] = {
-	-size,-size,-size, // triangle 1 : begin
+	-size,-size,-size, // triangle begin
 	-size,-size, size,
-	-size, size, size, // triangle 1 : end
-	size, size,-size, // triangle 2 : begin
+	-size, size, size, // triangle end
+	size, size,-size,
 	-size,-size,-size,
-	-size, size,-size, // triangle 2 : end
+	-size, size,-size,
 	size,-size, size,
 	-size,-size,-size,
 	size,-size,-size,
@@ -151,13 +161,13 @@ static glm::mat4 projMat(1.0f);
 // Normalization of Camera
 static glm::mat3 normalMat = glm::mat3(1.0);
 
-//Program Location " Used to Set Shaders and Send Data for them.,
-unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc;
+//Program Location " Used to Set Shaders and Send Data for them.
+unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc, grassTexLoc, skyTexLoc;
 
 
-/* VBO (BUFFER) VAO and textures */
-unsigned int buffer[3];
-unsigned int vao[3];
+/* VBO (BUFFER) VAO and textures  ( INCRESE WITH NEW OBJECTS )*/
+unsigned int buffer[4];
+unsigned int vao[4];
 unsigned int texture[2];
 
 
@@ -175,7 +185,6 @@ void setup(void)
 	glEnable(GL_DEPTH_TEST);
 	// < https://stackoverflow.com/questions/28137027/why-do-i-need-glcleargl-depth-buffer-bit >
 	glDepthFunc(GL_LESS);
-
 
 
 	// Set from Shader.h  Create Shader Program Executable
@@ -227,33 +236,34 @@ void setup(void)
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), 0);
 
 	// index - Specifies the index of the generic vertex attribute to be enabled or disabled.
-	glEnableVertexAttribArray(0);// Enables or disables a generic vertex attribute array Values of 1, 0  True or false.
+	glEnableVertexAttribArray(0);  // layout(location=0) in vec4 Coords; ON VERTEXSHADER 
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), (void*)(sizeof(fieldVertices[0].coords)));
-	glEnableVertexAttribArray(1); // Cast to 1 === True 
-
-	/* Sphere Vertex Data */
-	int verCount, triCount;
-	sphereVerticesNor = Sphere1.GetVerData(verCount);
-	sphereIndices = Sphere1.GetTriData(triCount);
+	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords; ON VERTEXSHADER
+	
 
 	/* CUBE */
 	glBindVertexArray(vao[CUBE]);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
 	glEnableVertexAttribArray(0);
 
-	/* Sphere Binding */
+	/* Sphere Vertex Data */
+	int verCount, triCount;
+	sphereVerticesNor = Sphere1.GetVerData(verCount);
+	sphereIndices = Sphere1.GetTriData(triCount);
+
+	/* Sphere */
 	glBindVertexArray(vao[SPHERE]);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer[SPHERE_VERTICES]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexWtihNormal) * verCount, sphereVerticesNor, GL_STATIC_DRAW);  ///please note the change
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer[SPHERE_INDICES]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * triCount, sphereIndices, GL_STATIC_DRAW); ///please note the change
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), 0);  //layout(location=4) in vec4 fieldCoords;
-	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(2); // layout(location=2) in vec4 sphereCoords;
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
-	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(3); // layout(location=3) in vec3 sphereNormals;
 
 
 
@@ -269,6 +279,64 @@ void setup(void)
 	// Obtain modelview matrix uniform and object uniform locations.
 	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat"); // ModelViewMatrix
 	objectLoc = glGetUniformLocation(programId, "object");             // Uniform Object
+
+
+	// Specify Texture Location.
+	std::string TextureList[] = {
+		"Textures/grass.bmp",
+		"Textures/sky.bmp",
+	};
+
+	// Generate TextureList Id's
+	glGenTextures(2, texture);
+
+	// Texture Placement Identification 
+	int width, height;
+	unsigned char* data;
+
+	/* Bind Grass Image */
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+
+	// Load Image Data with SOIL Library
+	data = SOIL_load_image(TextureList[0].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	SOIL_free_image_data(data);
+
+	// Establish Texture Paremeters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+	grassTexLoc = glGetUniformLocation(programId, "grassTex");
+	glUniform1i(grassTexLoc, 0); // texture to shader
+
+	/* BIND SKY TEXTURE */
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, texture[1]);  // See glGenTextures and TextureList
+
+	//load image data using SOIL library
+	data = SOIL_load_image(TextureList[1].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	/* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml Reference */
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	SOIL_free_image_data(data);
+
+	// Generate SKy Textures
+	glGenerateMipmap(GL_TEXTURE_2D); // Generates map for the picture
+	skyTexLoc = glGetUniformLocation(programId, "skyTex");
+	glUniform1i(skyTexLoc, 1); //send texture to shader
+
+	glBindVertexArray(vao[SKY]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[SKY_VERTICES]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyVertices), skyVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), 0);
+	glEnableVertexAttribArray(0);  // layout(location=0) in vec4 Coords;
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), (void*)(sizeof(skyVertices[0].coords)));
+	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords;
+
+
 }
 
 /* Scene Drawables Routine*/
@@ -284,33 +352,39 @@ void drawScene(void)
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat));
 
 
-	/* FIELD Bind And Shader intilization for colour*/
+	/* Initialize Colour And DRAW FIELD */
 	glUniform1ui(objectLoc, FIELD);  //if (object == FIELD)
 	glBindVertexArray(vao[FIELD]);         // Bind
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // Render Array of triangles 
 
+	/* DRAW SKY */
+	glUniform1ui(objectLoc, SKY);  //if (object == SKY)
+	glBindVertexArray(vao[SKY]);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	/* SPHERE */
 	int triCount;
 	sphereIndices = Sphere1.GetTriData(triCount);
 
 	/* Sphere Animation */
-
 	modelViewMat = mat4(1.0);
 	modelViewMat = lookAt(vec3(0.0, 10.0, 15.0), vec3(0.0 + CamPosX, 10.0 + CamPosY, 0.0), vec3(0.0, 1.0, 0.0)); // Apply modelview
 	modelViewMat = translate(modelViewMat, Sphere1.GetPosition()); // Sets Sphere's Position and modifies modelview matrix
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat)); // Send to shader 
 	
 	/* SPHERE Binding */
-	//glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
-	//glBindVertexArray(vao[SPHERE]);
-	//glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
+	glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
+	glBindVertexArray(vao[SPHERE]);
+	glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
+
+	// CUBE NOT DRAWABLE ANYMORE
+	// Consider Adding Shaders in Fragment instead of usual fixed color And Position.
+	/* CUBE Draws */
+	//glUniform1ui(objectLoc, CUBE); // If object == CUBE
+	//glBindVertexArray(vao[CUBE]);
+	//glDrawArrays(GL_TRIANGLES, 0, 12 * 3);
 
 
-	/* CUBE DRaws TRIANGLE ATM */
-	glUniform1ui(objectLoc, CUBE); // If object == CUBE
-	glBindVertexArray(vao[CUBE]);
-	glDrawArrays(GL_TRIANGLES, 0, 12 * 3);
 
 
 	glutSwapBuffers(); // Change buffers when the current window is double buffered.
@@ -401,7 +475,7 @@ int main(int argc, char** argv)
 	glutCreateWindow("Graphics Engine Alpha v0.1");
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(resize);
-	//glutIdleFunc(animation);
+	glutIdleFunc(animation);
 	glutKeyboardFunc(keyInput); // Process ACII keys
 	glutSpecialFunc(specialKeyInput); // Process Non ACII Keys.
 

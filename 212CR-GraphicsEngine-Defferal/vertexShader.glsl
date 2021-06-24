@@ -5,8 +5,9 @@
 /* Objects definitions */
 // THese have to be In order See Main.cpp |static enum object| and | static enum buffer|
 #define FIELD 0
-#define SKY 1
+#define CUBE 1
 #define SPHERE 2
+#define SKY 3
 
 
 // Locations of Data Sent by glVertexAttribPointer And Activated by glEnableVertexAttribArray
@@ -44,6 +45,11 @@ void main(void)
       coords = sphereCoords;
       normalExport = sphereNormals;
    }
+   if (object == CUBE)
+   {
+      coords = Coords;
+   }
+
 
    
    gl_Position = projMat * modelViewMat * coords;

@@ -46,13 +46,18 @@ out vec4 colorsOut;
 vec3 normal, lightDirection;
 vec4 fAndBDif;
 
-vec4 fieldTexColor;
+vec4 fieldTexColor, skyTexColor;
+
+// Pass to Vertex from Uniform
+uniform sampler2D grassTex;    // GRASS TEXTURE
+uniform sampler2D skyTex;      // SKY TEXTURE 
 
 void main(void)
 {
    /* Colour Def */
-   fieldTexColor = vec4(0.4,0.4,0.4,1.0);
-
+   //fieldTexColor = vec4(0.4,0.4,0.4,1.0); // Fixed Colour Gray
+   fieldTexColor = texture(grassTex, texCoordsExport);
+   skyTexColor = texture(skyTex, texCoordsExport);
 
    if (object == FIELD) 
    {
@@ -69,6 +74,10 @@ void main(void)
    if (object == CUBE)
    {
 	  colorsOut = vec4(1.0,0.0,0.0,1.0); // Fixed Colour 
+   }
+   if (object == SKY) 
+   {
+   colorsOut = skyTexColor;
    }
 
 }
