@@ -37,6 +37,9 @@
 
 /* Global Variables*/
 
+// Keyboard
+int costumnumber = 1; // Number used to select Texture
+
 /* VAO and VBO ids*/
 
 // declares object, with types of objects. ( Have to be In order WIth Vertex/Fragment In #Define
@@ -170,7 +173,14 @@ unsigned int buffer[4];
 unsigned int vao[4];
 unsigned int texture[2];
 
+// Specify Texture Location.
+std::string TextureList[] = {
+	"Textures/grass.bmp",
+	"Textures/sky.bmp",
+	"Textures/nightSky.bmp",
+};
 
+int text[]{ 0,1,2,3,4 };
 
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
@@ -241,13 +251,7 @@ void setup(void)
 	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords; ON VERTEXSHADER
 	
 
-	/* CUBE */
-	glBindVertexArray(vao[CUBE]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
-	glEnableVertexAttribArray(0);
 
 	/* Sphere Vertex Data */
 	int verCount, triCount;
@@ -265,7 +269,13 @@ void setup(void)
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
 	glEnableVertexAttribArray(3); // layout(location=3) in vec3 sphereNormals;
 
+	/* CUBE */
+	glBindVertexArray(vao[CUBE]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
+	glEnableVertexAttribArray(0);
 
 	////////////////////////////////////////////////////////////////////
 	// Obtain projection matrix uniform location and set value.
@@ -281,11 +291,6 @@ void setup(void)
 	objectLoc = glGetUniformLocation(programId, "object");             // Uniform Object
 
 
-	// Specify Texture Location.
-	std::string TextureList[] = {
-		"Textures/grass.bmp",
-		"Textures/sky.bmp",
-	};
 
 	// Generate TextureList Id's
 	glGenTextures(2, texture);
@@ -315,10 +320,10 @@ void setup(void)
 
 	/* BIND SKY TEXTURE */
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture[1]);  // See glGenTextures and TextureList
+	glBindTexture(GL_TEXTURE_2D, texture[costumnumber]);  // See glGenTextures and TextureList
 
 	//load image data using SOIL library
-	data = SOIL_load_image(TextureList[1].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	data = SOIL_load_image(TextureList[costumnumber].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
 	/* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml Reference */
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	SOIL_free_image_data(data);
@@ -425,6 +430,16 @@ void keyInput(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
+	case 101: // E Button on Keyboard.
+	// Change texture image of the sky.
+	std::cout << " Key E was pressed" << std::endl;
+	costumnumber = costumnumber == 1 ? 2 : 1; // Change between Numbers.
+
+	// https://www.w3schools.com/cpp/cpp_conditions_shorthand.asp Ternary operator
+	setup(); // Rerun Setup and Replace Do not use Future Project Unnesecary usage,
+	//As All textures have to be reapplied.
+
+	break;
 	case 27: // ESC button.
 		std::cout << " Game has been terminated " << std::endl;
 		exit(0);

@@ -46,6 +46,7 @@ out vec4 colorsOut;
 vec3 normal, lightDirection;
 vec4 fAndBDif;
 
+/* Colour Def */
 vec4 fieldTexColor, skyTexColor;
 
 // Pass to Vertex from Uniform
@@ -54,8 +55,9 @@ uniform sampler2D skyTex;      // SKY TEXTURE
 
 void main(void)
 {
-   /* Colour Def */
+   // For addition Define In area Vec4 
    //fieldTexColor = vec4(0.4,0.4,0.4,1.0); // Fixed Colour Gray
+
    fieldTexColor = texture(grassTex, texCoordsExport);
    skyTexColor = texture(skyTex, texCoordsExport);
 
