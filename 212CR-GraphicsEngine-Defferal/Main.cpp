@@ -25,7 +25,7 @@
 #include "vertex.h"
 #include "sphere.h"
 #include "SOIL/SOIL.h" // Have it In Linker/Input  has to be before opengl links.
-
+#include "ImpModel.h"
 
 /* <https://codeyarns.com/tech/2015-09-14-how-to-check-error-in-glew.html>*/
 // Error Checking For GLEW, if glewInit() does not return Glew_OK
@@ -35,21 +35,13 @@
 #define GLEW_ERROR_GL_VERSION_10_ONLY 2  /* Specifies that a minimum of OpenGL 1.1 is required */
 #define GLEW_ERROR_GLX_VERSION_11_ONLY 3  /*  Specifies that a minimum of GLX 1.2 is required*/
 
-/* Global Variables*/
-
-// Keyboard
-int costumnumber = 1; // Number used to select Texture
 
 /* VAO and VBO ids*/
 
 // declares object, with types of objects. ( Have to be In order WIth Vertex/Fragment In #Define
-static enum object { FIELD, CUBE, SPHERE, SKY }; // VAO ids.
-static enum buffer { FIELD_VERTICES, CUBE_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, SKY_INDICES, SKY_VERTICES};
+static enum object { FIELD, CUBE, SPHERE, SKY, TRACK }; // VAO ids.
+static enum buffer { FIELD_VERTICES, CUBE_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, SKY_INDICES, SKY_VERTICES, TRACK_VERTICES};
 
-/* Sphere Vertices, Normals, Triangle indices */
-static VertexWtihNormal* sphereVerticesNor = NULL;
-static unsigned int* sphereIndices = NULL;
-static Sphere Sphere1;
 
 // FIELD Area Specification
 static Vertex fieldVertices[] =
@@ -107,14 +99,6 @@ static const Light light0 =
 	vec4(1.0, 1.0, 1.0, 1.0),
 	vec4(1.0, 1.0, 0.0, 0.0)
 };
-
-/* Sphere Z position Coordinate */
-
-static float SphereZ = 0;
-
-/* CAMERA */
-static float CamPosX = 0.0;
-static float CamPosY = 0.0;
 
 
 int size = 4.0f; // Enables us to Set the Size of the Cube
@@ -180,7 +164,26 @@ std::string TextureList[] = {
 	"Textures/nightSky.bmp",
 };
 
-int text[]{ 0,1,2,3,4 };
+/* VERIABLES */
+
+/* Sphere Z position Coordinate for the Sphere */
+static float SphereZ = 0;
+
+/* CAMERA */
+static float CamPosX = 0.0;
+static float CamPosY = 0.0;
+
+/* Sphere Vertices, Normals, Triangle indices */
+static VertexWtihNormal* sphereVerticesNor = NULL;
+static unsigned int* sphereIndices = NULL;
+static Sphere Sphere1;
+
+// Keyboard
+int costumnumber = 1; // Number used to select Texture  From Texture 1 or 2
+
+/* Object Imports*/
+static ImpModel Track("racetrack.obj");
+
 
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
@@ -227,10 +230,10 @@ void setup(void)
 	std::cout << " Generating VAO and Buffers " << std::endl;
 
 	// Generate VAO and VBO ( Buffer ) ID's
-	glGenVertexArrays(3, vao);
+	glGenVertexArrays(4, vao);
 	glGenBuffers(3, buffer);
 
-	// Binding Field 
+	/* FIELD BINDING */
 	std::cout << " Binding VAO and VBO" << std::endl;
 	glBindVertexArray(vao[FIELD]);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer[FIELD_VERTICES]);
@@ -250,8 +253,6 @@ void setup(void)
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), (void*)(sizeof(fieldVertices[0].coords)));
 	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords; ON VERTEXSHADER
 	
-
-
 
 	/* Sphere Vertex Data */
 	int verCount, triCount;
@@ -277,6 +278,21 @@ void setup(void)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
 	glEnableVertexAttribArray(0);
 
+	/* SKY BINDING */
+	glBindVertexArray(vao[SKY]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[SKY_VERTICES]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyVertices), skyVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), 0);
+	glEnableVertexAttribArray(0);  // layout(location=0) in vec4 Coords;
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), (void*)(sizeof(skyVertices[0].coords)));
+	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords;
+
+	/*RACETRACK BINDING */ // Remember Adds another glGenVertexArrays 
+	glGenBuffers(1, &buffer[TRACK_VERTICES]);
+	Track.SetIDs(vao[TRACK], buffer[TRACK_VERTICES], 0);
+	Track.Setup();
+
+
 	////////////////////////////////////////////////////////////////////
 	// Obtain projection matrix uniform location and set value.
 	projMatLoc = glGetUniformLocation(programId, "projMat"); //uniform mat4 projMat;
@@ -289,8 +305,6 @@ void setup(void)
 	// Obtain modelview matrix uniform and object uniform locations.
 	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat"); // ModelViewMatrix
 	objectLoc = glGetUniformLocation(programId, "object");             // Uniform Object
-
-
 
 	// Generate TextureList Id's
 	glGenTextures(2, texture);
@@ -333,13 +347,7 @@ void setup(void)
 	skyTexLoc = glGetUniformLocation(programId, "skyTex");
 	glUniform1i(skyTexLoc, 1); //send texture to shader
 
-	glBindVertexArray(vao[SKY]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[SKY_VERTICES]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(skyVertices), skyVertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), 0);
-	glEnableVertexAttribArray(0);  // layout(location=0) in vec4 Coords;
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), (void*)(sizeof(skyVertices[0].coords)));
-	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords;
+
 
 
 }
@@ -382,14 +390,17 @@ void drawScene(void)
 	glBindVertexArray(vao[SPHERE]);
 	glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
 
+	// Draw Track
+	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -60.0f);
+	glUniform1ui(objectLoc, TRACK);  //if (object == TRACK)
+	Track.Draw();
+
 	// CUBE NOT DRAWABLE ANYMORE
 	// Consider Adding Shaders in Fragment instead of usual fixed color And Position.
 	/* CUBE Draws */
 	//glUniform1ui(objectLoc, CUBE); // If object == CUBE
 	//glBindVertexArray(vao[CUBE]);
 	//glDrawArrays(GL_TRIANGLES, 0, 12 * 3);
-
-
 
 
 	glutSwapBuffers(); // Change buffers when the current window is double buffered.

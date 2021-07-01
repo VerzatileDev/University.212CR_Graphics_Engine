@@ -142,7 +142,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ImpModel.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Object.cpp" />
     <ClCompile Include="readshaders.cpp" />
     <ClCompile Include="Sphere.cpp" />
   </ItemGroup>
@@ -151,6 +153,9 @@
     <None Include="vertexShader.glsl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ImpModel.h" />
+    <ClInclude Include="LoadObject.h" />
+    <ClInclude Include="Object.h" />
     <ClInclude Include="readshaders.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="vertex.h" />

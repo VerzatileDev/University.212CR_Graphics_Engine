@@ -5,6 +5,7 @@
 #define CUBE 1
 #define SPHERE 2
 #define SKY 3
+#define TRACK 4
 
 
 // https://learnopengl.com/Getting-started/Shaders
@@ -30,8 +31,6 @@ struct Material
    float shininess;
 };
 
-// Field  Object 
-uniform uint object;
 
 // Sphere Lighting 
 uniform Light light0;
@@ -51,7 +50,8 @@ vec4 fieldTexColor, skyTexColor;
 
 // Pass to Vertex from Uniform
 uniform sampler2D grassTex;    // GRASS TEXTURE
-uniform sampler2D skyTex;      // SKY TEXTURE 
+uniform sampler2D skyTex;      // SKY TEXTURE
+uniform uint object;          // Object on Field
 
 void main(void)
 {
@@ -80,6 +80,9 @@ void main(void)
    if (object == SKY) 
    {
    colorsOut = skyTexColor;
+   }
+   if (object == TRACK) {
+	colorsOut = skyTexColor;
    }
 
 }

@@ -17,4 +17,12 @@ struct VertexWtihNormal
 	glm::vec3 normals;
 };
 
+struct  VertexWithAll
+{
+	glm::vec3 position;
+	glm::vec3 color;
+	glm::vec2 textcoord;
+	glm::vec3 normal;
+};
+
 #endif

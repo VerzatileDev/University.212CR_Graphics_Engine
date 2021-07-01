@@ -8,6 +8,7 @@
 #define CUBE 1
 #define SPHERE 2
 #define SKY 3
+#define TRACK 4
 
 
 // Locations of Data Sent by glVertexAttribPointer And Activated by glEnableVertexAttribArray
@@ -15,6 +16,11 @@ layout(location=0) in vec4 Coords;
 layout(location=1) in vec2 TexCoords;
 layout(location=2) in vec4 sphereCoords;
 layout(location=3) in vec3 sphereNormals;
+
+// OBJECT DATA LOCATION, NORMALS, TEXCOORDS
+layout(location=4) in vec3 objCoords;
+layout(location=5) in vec3 objNormals;
+layout(location=6) in vec2 objTexCoords;
 
 
 // Uniform Pass by glUniformMatrix4fv
@@ -49,7 +55,12 @@ void main(void)
    {
       coords = Coords;
    }
-
+   if (object == TRACK)
+   {
+    coords = vec4(objCoords, 1.0f);
+    normalExport = objNormals;
+    texCoordsExport = objTexCoords;
+   }
 
    
    gl_Position = projMat * modelViewMat * coords;
