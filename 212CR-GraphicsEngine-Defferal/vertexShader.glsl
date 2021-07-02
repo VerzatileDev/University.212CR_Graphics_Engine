@@ -5,10 +5,11 @@
 /* Objects definitions */
 // THese have to be In order See Main.cpp |static enum object| and | static enum buffer|
 #define FIELD 0
-#define CUBE 1
+#define SKY 1
 #define SPHERE 2
-#define SKY 3
-#define TRACK 4
+#define TRACK 3
+#define HOVER 4
+#define CUBE 5
 
 
 // Locations of Data Sent by glVertexAttribPointer And Activated by glEnableVertexAttribArray
@@ -51,15 +52,21 @@ void main(void)
       coords = sphereCoords;
       normalExport = sphereNormals;
    }
-   if (object == CUBE)
-   {
-      coords = Coords;
-   }
    if (object == TRACK)
    {
     coords = vec4(objCoords, 1.0f);
     normalExport = objNormals;
     texCoordsExport = objTexCoords;
+   }
+    if (object == HOVER)
+   {
+     coords = vec4(objCoords, 1.0f);
+     normalExport = objNormals;
+     texCoordsExport = objTexCoords;
+   }
+   if (object == CUBE)
+   {
+      coords = Coords;
    }
 
    

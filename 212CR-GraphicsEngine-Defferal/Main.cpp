@@ -39,8 +39,8 @@
 /* VAO and VBO ids*/
 
 // declares object, with types of objects. ( Have to be In order WIth Vertex/Fragment In #Define
-static enum object { FIELD, CUBE, SPHERE, SKY, TRACK }; // VAO ids.
-static enum buffer { FIELD_VERTICES, CUBE_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, SKY_INDICES, SKY_VERTICES, TRACK_VERTICES};
+static enum object { FIELD, SKY, SPHERE, TRACK, HOVER, CUBE }; // VAO ids.
+static enum buffer { FIELD_VERTICES, SKY_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, TRACK_VERTICES, HOVER_VERTICES, CUBE_VERTICES};
 
 
 // FIELD Area Specification
@@ -153,9 +153,10 @@ unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projM
 
 
 /* VBO (BUFFER) VAO and textures  ( INCRESE WITH NEW OBJECTS )*/
-unsigned int buffer[4];
-unsigned int vao[4];
+unsigned int buffer[6];
+unsigned int vao[5];
 unsigned int texture[2];
+int texSize = 0; // Sets the Size of TextureList for Texture Generation.
 
 // Specify Texture Location.
 std::string TextureList[] = {
@@ -163,6 +164,7 @@ std::string TextureList[] = {
 	"Textures/sky.bmp",
 	"Textures/nightSky.bmp",
 };
+
 
 /* VERIABLES */
 
@@ -183,7 +185,7 @@ int costumnumber = 1; // Number used to select Texture  From Texture 1 or 2
 
 /* Object Imports*/
 static ImpModel Track("racetrack.obj");
-
+static ImpModel Hover("spaceship.obj");
 
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
@@ -230,8 +232,15 @@ void setup(void)
 	std::cout << " Generating VAO and Buffers " << std::endl;
 
 	// Generate VAO and VBO ( Buffer ) ID's
-	glGenVertexArrays(4, vao);
+	glGenVertexArrays(5, vao);
 	glGenBuffers(3, buffer);
+
+	/* CUBE */
+	glBindVertexArray(vao[CUBE]);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
+	glEnableVertexAttribArray(0);
 
 	/* FIELD BINDING */
 	std::cout << " Binding VAO and VBO" << std::endl;
@@ -254,30 +263,6 @@ void setup(void)
 	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords; ON VERTEXSHADER
 	
 
-	/* Sphere Vertex Data */
-	int verCount, triCount;
-	sphereVerticesNor = Sphere1.GetVerData(verCount);
-	sphereIndices = Sphere1.GetTriData(triCount);
-
-	/* Sphere */
-	glBindVertexArray(vao[SPHERE]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[SPHERE_VERTICES]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexWtihNormal) * verCount, sphereVerticesNor, GL_STATIC_DRAW);  ///please note the change
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer[SPHERE_INDICES]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * triCount, sphereIndices, GL_STATIC_DRAW); ///please note the change
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), 0);  //layout(location=4) in vec4 fieldCoords;
-	glEnableVertexAttribArray(2); // layout(location=2) in vec4 sphereCoords;
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
-	glEnableVertexAttribArray(3); // layout(location=3) in vec3 sphereNormals;
-
-	/* CUBE */
-	glBindVertexArray(vao[CUBE]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
-	glEnableVertexAttribArray(0);
-
 	/* SKY BINDING */
 	glBindVertexArray(vao[SKY]);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer[SKY_VERTICES]);
@@ -287,10 +272,22 @@ void setup(void)
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), (void*)(sizeof(skyVertices[0].coords)));
 	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords;
 
+
+
 	/*RACETRACK BINDING */ // Remember Adds another glGenVertexArrays 
 	glGenBuffers(1, &buffer[TRACK_VERTICES]);
 	Track.SetIDs(vao[TRACK], buffer[TRACK_VERTICES], 0);
 	Track.Setup();
+
+	//Binding Track VAO and VBO
+	glGenBuffers(1, &buffer[HOVER_VERTICES]); ///generate one more id for VBO
+	Hover.SetIDs(vao[HOVER], buffer[HOVER_VERTICES], 0);
+	Hover.Setup();
+
+
+	//Binding VAO and VBO
+	Sphere1.SetIDs(vao[SPHERE], buffer[SPHERE_VERTICES], buffer[SPHERE_INDICES]);
+	Sphere1.Setup();
 
 
 	////////////////////////////////////////////////////////////////////
@@ -303,13 +300,16 @@ void setup(void)
 	glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat)); //< https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glUniform.xml > 
 
 	// Obtain modelview matrix uniform and object uniform locations.
-	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat"); // ModelViewMatrix
-	objectLoc = glGetUniformLocation(programId, "object");             // Uniform Object
+	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat"); // uniform ModelViewMatrix
+	objectLoc = glGetUniformLocation(programId, "object");             // Uniform uint Object
 
-	// Generate TextureList Id's
-	glGenTextures(2, texture);
+	/* Texture Names At Global*/
+	// Checks textures inside TextureList[] takes size, and generates Textures.
+	texSize = sizeof(TextureList) / sizeof(TextureList[0]);
+	glGenTextures(texSize, texture);
 
-	// Texture Placement Identification 
+
+	/* Texture Data information */
 	int width, height;
 	unsigned char* data;
 
@@ -361,7 +361,7 @@ void drawScene(void)
 	
 	// Calculate and update modelview matrix.
 	modelViewMat = glm::mat4(1.0);
-	modelViewMat = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0, 10.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	modelViewMat = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 10.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat));
 
 
@@ -375,25 +375,20 @@ void drawScene(void)
 	glBindVertexArray(vao[SKY]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	/* SPHERE */
-	int triCount;
-	sphereIndices = Sphere1.GetTriData(triCount);
-
-	/* Sphere Animation */
-	modelViewMat = mat4(1.0);
-	modelViewMat = lookAt(vec3(0.0, 10.0, 15.0), vec3(0.0 + CamPosX, 10.0 + CamPosY, 0.0), vec3(0.0, 1.0, 0.0)); // Apply modelview
-	modelViewMat = translate(modelViewMat, Sphere1.GetPosition()); // Sets Sphere's Position and modifies modelview matrix
-	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat)); // Send to shader 
-	
-	/* SPHERE Binding */
+	// Draw sphere
+	Sphere1.updateModelMatrix(modelViewMatLoc, CamPosX);
 	glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
-	glBindVertexArray(vao[SPHERE]);
-	glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
+	Sphere1.Draw();
 
 	// Draw Track
 	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -60.0f);
 	glUniform1ui(objectLoc, TRACK);  //if (object == TRACK)
 	Track.Draw();
+
+	// Draw Hover
+	Hover.updateModelMatrix(modelViewMatLoc, CamPosX, 1.5f, 0.0f);
+	glUniform1ui(objectLoc, HOVER);  //if (object == HOVER)
+	Hover.Draw();
 
 	// CUBE NOT DRAWABLE ANYMORE
 	// Consider Adding Shaders in Fragment instead of usual fixed color And Position.

@@ -2,14 +2,15 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include "vertex.h"
+#include "Object.h"
 
 using namespace glm;
 
 /* See http://donw.io/post/sphere-indexing/ For Better sphere */
-class Sphere
+class Sphere : public Object
 {
 private:
-	vec3 Position;
+
 	VertexWtihNormal* sphereVerticesNor;  //Sphere Normal Data
 	unsigned int* sphereIndices;          //Sphere triangle indices    
 
@@ -17,6 +18,12 @@ private:
 	int stacks;
 	int slices; 
 	float radius;
+
+	unsigned int VAO;
+	unsigned int VBO;
+	unsigned int IBO; //for triangle indices buffer
+
+	mat4 ModelMatrix;
 
 	void CreateSpherewithNormal();
 
@@ -26,7 +33,11 @@ public:
 
 	void SetPosition(vec3 newPos);
 	vec3 GetPosition(void);
-	VertexWtihNormal* GetVerData(int&);
-	unsigned int* GetTriData(int&);
+	void SetIDs(unsigned int, unsigned int, unsigned int);
+	void updateModelMatrix(unsigned int, float);
+
+	void Setup();
+	void Draw();
+	void Update(float, glm::vec3 offset);
 };
 

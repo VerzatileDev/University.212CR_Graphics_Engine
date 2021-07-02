@@ -6,12 +6,12 @@
 // Spheres information  * Stacks slices and the Radius
 Sphere::Sphere()
 {
-	stacks = 10;
-	slices = 10;
+	stacks = 10; //number of segments
+	slices = 10; //number of segments
 	radius = 6.0f;
+	position = vec3(0);
 
-	// Sphere Location
-	Position = vec3(0);
+	VAO = VBO = 0;
 
 	/* Set the Amount of Verticies by (stacks+1)*(slices +1)*/
 	sphereVerticesNor = (VertexWtihNormal*)malloc(sizeof(VertexWtihNormal) * 121); //total number of vertices = (stacks+1)*(slices +1)
@@ -77,26 +77,55 @@ void Sphere::CreateSpherewithNormal(void)
 	count = 0;
 }
 
-// Take Int of the number of Verticies 
-VertexWtihNormal* Sphere::GetVerData(int& verticiesNum)
+void Sphere::Setup()
 {
-	verticiesNum = 121;
-	return sphereVerticesNor;
+	int verCount = 121;
+	int triCount = 660;
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexWtihNormal) * verCount, sphereVerticesNor, GL_STATIC_DRAW);  ///please note the change
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * triCount, sphereIndices, GL_STATIC_DRAW); ///please note the change
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), 0);  //layout(location=4) in vec4 fieldCoords;
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
+	glEnableVertexAttribArray(3);
 }
 
-unsigned int* Sphere::GetTriData(int& triNum)
+void Sphere::updateModelMatrix(unsigned int modelViewMatLoc, float d)
 {
-	triNum = 660;
-	return sphereIndices;
+	ModelMatrix = mat4(1.0);
+	ModelMatrix = lookAt(vec3(0.0, 10.0, 15.0), vec3(0.0 + d, 10.0, 0.0), vec3(0.0, 1.0, 0.0));
+	ModelMatrix = glm::translate(ModelMatrix, position); //apply Sphere Position
+	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(ModelMatrix));  //send modelview matrix to the shader
+}
+
+void Sphere::Draw()
+{
+	int triCount = 660;
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLE_STRIP, triCount, GL_UNSIGNED_INT, sphereIndices);
+}
+
+void Sphere::Update(float deltaTime, glm::vec3 offset)
+{
+	//collider->Update(deltaTime, position, offset);
+}
+
+void Sphere::SetIDs(unsigned int vao, unsigned int vbo, unsigned int ibo)
+{
+	VAO = vao;
+	VBO = vbo;
+	IBO = ibo;
 }
 
 // Take in position and Set new To Position 
 void Sphere::SetPosition(vec3 newPos)
 {
-	Position = newPos;
+	position = newPos;
 }
 // Retrives Position of the Sphere at that moment.
 vec3 Sphere::GetPosition(void)
 {
-	return Position;
+	return position;
 }
