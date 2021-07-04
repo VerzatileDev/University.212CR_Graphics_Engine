@@ -22,10 +22,11 @@
 /* Header Files to be Included */
 
 #include "readshaders.h"
-#include "vertex.h"
+#include "vertex.h"   
 #include "sphere.h"
 #include "SOIL/SOIL.h" // Have it In Linker/Input  has to be before opengl links.
-#include "ImpModel.h"
+#include "ImpModel.h"  // Used to import Models. 
+#include "Skybox.h"   // Sets Cube Around the play Area as Skybox. 
 
 /* <https://codeyarns.com/tech/2015-09-14-how-to-check-error-in-glew.html>*/
 // Error Checking For GLEW, if glewInit() does not return Glew_OK
@@ -39,28 +40,10 @@
 /* VAO and VBO ids*/
 
 // declares object, with types of objects. ( Have to be In order WIth Vertex/Fragment In #Define
-static enum object { FIELD, SKY, SPHERE, TRACK, HOVER, CUBE }; // VAO ids.
-static enum buffer { FIELD_VERTICES, SKY_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, TRACK_VERTICES, HOVER_VERTICES, CUBE_VERTICES};
+static enum object { TRACK, HOVER, SKYBOX }; // VAO ids.
+static enum buffer { TRACK_VERTICES, HOVER_VERTICES, SKYBOX_VERTICES};
 
 
-// FIELD Area Specification
-static Vertex fieldVertices[] =
-{
-	{glm::vec4(100.0, 0.0, 100.0, 1.0), glm::vec2(8.0, 0.0)},
-	{glm::vec4(100.0, 0.0, -100.0, 1.0), glm::vec2(8.0, 8.0)},
-	{glm::vec4(-100.0, 0.0, 100.0, 1.0), glm::vec2(0.0, 0.0)},
-	{glm::vec4(-100.0, 0.0, -100.0, 1.0), glm::vec2(0.0, 8.0)}
-};
-
-/* SKY Area Specification */
-static Vertex skyVertices[] =
-{
-	// Fixed picture orientation by Changing Top left with bottom right, top right with bottom left. Vec4
-	{vec4(-200.0, 120.0, -70.0, 1.0), vec2(1.0, 0.0)}, // Bottom right
-	{vec4(-200.0, 0.0, -70.0, 1.0), vec2(1.0, 1.0)},// Top rigt corner
-	{vec4(200.0, 120.0, -70.0, 1.0), vec2(0.0, 0.0)}, // bottom left
-	{vec4(200.0, 0.0, -70.0, 1.0), vec2(0.0, 1.0)} // Top left
-};
 
 /* Lighting */
 struct Material
@@ -101,8 +84,8 @@ static const Light light0 =
 };
 
 
+/* CUBE DATA */
 int size = 4.0f; // Enables us to Set the Size of the Cube
-
 static const float vertices[] = {
 	-size,-size,-size, // triangle begin
 	-size,-size, size,
@@ -142,50 +125,59 @@ static const float vertices[] = {
 	size,-size, size
 };
 
+
 // Used in Definition of the camera. With ModelViewMat and ProjMat
 static glm::mat4 modelViewMat(1.0f);
 static glm::mat4 projMat(1.0f);
-// Normalization of Camera
-static glm::mat3 normalMat = glm::mat3(1.0);
+static glm::mat3 normalMat = glm::mat3(1.0); // Normalization of Camera
 
 //Program Location " Used to Set Shaders and Send Data for them.
-unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc, grassTexLoc, skyTexLoc;
+unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc, yValLoc, grassTexLoc, skyTexLoc, woodTexLoc;
 
 
 /* VBO (BUFFER) VAO and textures  ( INCRESE WITH NEW OBJECTS )*/
-unsigned int buffer[6];
-unsigned int vao[5];
-unsigned int texture[2];
-int texSize = 0; // Sets the Size of TextureList for Texture Generation.
+unsigned int buffer[3];
+unsigned int vao[3];
+unsigned int texture[4];
+
 
 // Specify Texture Location.
 std::string TextureList[] = {
 	"Textures/grass.bmp",
 	"Textures/sky.bmp",
-	"Textures/nightSky.bmp",
+	 "Textures/wood.png",
 };
 
 
-/* VERIABLES */
+/* GLOBAL VERIABLES */
 
 /* Sphere Z position Coordinate for the Sphere */
 static float SphereZ = 0;
 
 /* CAMERA */
-static float CamPosX = 0.0;
+static float zVal = 0; // Z Co-ordinates of the ball.
+static float xVal = 0; // X Co-ordinates of the hover.
+static float yVal = 0; // Y Co-ordinates of the track.
+static float CamPosX = 0.0; //Camera position
 static float CamPosY = 0.0;
+
+// YAW AND PITCH DEFINITIONS 
+float cameraYaw = 90;
+float cameraPitch;
+glm::vec3 cameraPosition = glm::vec3(0, 0, 0);
+glm::vec3 cameraForward = glm::vec3(0.0, 0.0, 15.0);
+
 
 /* Sphere Vertices, Normals, Triangle indices */
 static VertexWtihNormal* sphereVerticesNor = NULL;
 static unsigned int* sphereIndices = NULL;
-static Sphere Sphere1;
+//static Sphere Sphere1;
 
-// Keyboard
-int costumnumber = 1; // Number used to select Texture  From Texture 1 or 2
 
 /* Object Imports*/
 static ImpModel Track("racetrack.obj");
 static ImpModel Hover("spaceship.obj");
+Skybox skybox; // Make an instance of a skybox.
 
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
@@ -232,47 +224,29 @@ void setup(void)
 	std::cout << " Generating VAO and Buffers " << std::endl;
 
 	// Generate VAO and VBO ( Buffer ) ID's
-	glGenVertexArrays(5, vao);
+	glGenVertexArrays(3, vao);
 	glGenBuffers(3, buffer);
 
 	/* CUBE */
-	glBindVertexArray(vao[CUBE]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
-	glEnableVertexAttribArray(0);
+	//glBindVertexArray(vao[CUBE]);
+	//glBindBuffer(GL_ARRAY_BUFFER, buffer[CUBE_VERTICES]);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
+	//glEnableVertexAttribArray(0);
 
 	/* FIELD BINDING */
 	std::cout << " Binding VAO and VBO" << std::endl;
-	glBindVertexArray(vao[FIELD]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[FIELD_VERTICES]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(fieldVertices), fieldVertices, GL_STATIC_DRAW); // Reserve Space
+	
 
 	// Sets Singular Array of generic vertex Attribute Data
-	// Index - Specifies vertex Attribute to be Modified,
+	// index - Specifies the index of the generic vertex attribute to be enabled or disabled.
 	// Size - Number of Components per generic Vertex Attribute ( Must be 1,2,3,4) Initial = 4
 	// Type - of each component in Array
 	// Normalized - GL_True When Fixed Point,  False when Accessed.
 	// Stride - Specofies the byte offset Between Consecutive generic Vertex Attributes (Default 0)
 	// Pointer - Specofies offset of first component. (Initial Value 0 ) GL_Array_buffer Target.
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), 0);
 
-	// index - Specifies the index of the generic vertex attribute to be enabled or disabled.
-	glEnableVertexAttribArray(0);  // layout(location=0) in vec4 Coords; ON VERTEXSHADER 
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(fieldVertices[0]), (void*)(sizeof(fieldVertices[0].coords)));
-	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords; ON VERTEXSHADER
 	
-
-	/* SKY BINDING */
-	glBindVertexArray(vao[SKY]);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer[SKY_VERTICES]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(skyVertices), skyVertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), 0);
-	glEnableVertexAttribArray(0);  // layout(location=0) in vec4 Coords;
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(skyVertices[0]), (void*)(sizeof(skyVertices[0].coords)));
-	glEnableVertexAttribArray(1); // layout(location=1) in vec2 TexCoords;
-
-
 
 	/*RACETRACK BINDING */ // Remember Adds another glGenVertexArrays 
 	glGenBuffers(1, &buffer[TRACK_VERTICES]);
@@ -286,17 +260,14 @@ void setup(void)
 
 
 	//Binding VAO and VBO
-	Sphere1.SetIDs(vao[SPHERE], buffer[SPHERE_VERTICES], buffer[SPHERE_INDICES]);
-	Sphere1.Setup();
+	//Sphere1.SetIDs(vao[SPHERE], buffer[SPHERE_VERTICES], buffer[SPHERE_INDICES]);
+	//Sphere1.Setup();
 
 
-	////////////////////////////////////////////////////////////////////
+
 	// Obtain projection matrix uniform location and set value.
 	projMatLoc = glGetUniformLocation(programId, "projMat"); //uniform mat4 projMat;
-	projMat = glm::frustum(-5.0, 5.0, -5.0, 5.0, 5.0, 100.0);
-	// < https://glm.g-truc.net/0.9.4/api/a00151.html > Glm Lib Reference
-	// Dictates frustum Parameters, LEft, Right, Bottom, TOp, near, Far
-	
+	projMat = perspective(radians(60.0), 1.0, 0.1, 1000.0);
 	glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat)); //< https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glUniform.xml > 
 
 	// Obtain modelview matrix uniform and object uniform locations.
@@ -305,10 +276,11 @@ void setup(void)
 
 	/* Texture Names At Global*/
 	// Checks textures inside TextureList[] takes size, and generates Textures.
-	texSize = sizeof(TextureList) / sizeof(TextureList[0]);
+	int texSize = sizeof(TextureList) / sizeof(TextureList[0]);
 	glGenTextures(texSize, texture);
 
 
+	/* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml Reference */
 	/* Texture Data information */
 	int width, height;
 	unsigned char* data;
@@ -332,13 +304,11 @@ void setup(void)
 	grassTexLoc = glGetUniformLocation(programId, "grassTex");
 	glUniform1i(grassTexLoc, 0); // texture to shader
 
+
 	/* BIND SKY TEXTURE */
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture[costumnumber]);  // See glGenTextures and TextureList
-
-	//load image data using SOIL library
-	data = SOIL_load_image(TextureList[costumnumber].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
-	/* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml Reference */
+	glBindTexture(GL_TEXTURE_2D, texture[2]);  // See glGenTextures and TextureList
+	data = SOIL_load_image(TextureList[2].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	SOIL_free_image_data(data);
 
@@ -347,8 +317,27 @@ void setup(void)
 	skyTexLoc = glGetUniformLocation(programId, "skyTex");
 	glUniform1i(skyTexLoc, 1); //send texture to shader
 
+	/* Wood Texture */
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, texture[3]);
+
+	data = SOIL_load_image(TextureList[3].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	SOIL_free_image_data(data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	woodTexLoc = glGetUniformLocation(programId, "woodTex");
+	glUniform1i(woodTexLoc, 2); //send texture to shader
 
 
+    /* GENERATE SKYBOX Buffers vaos set textures */
+	glGenBuffers(1, &buffer[SKYBOX_VERTICES]);
+	skybox.InitialiseSkybox(vao[SKYBOX], buffer[SKYBOX_VERTICES]);
+	skybox.InitialiseCubeMap(programId, texture[3]);
 
 }
 
@@ -364,21 +353,18 @@ void drawScene(void)
 	modelViewMat = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 10.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat));
 
+	//Draw SkyBox
+	glUniform1ui(objectLoc, SKYBOX);  //if (object == SKYBOX)
+	skybox.SetViewMatrix(modelViewMatLoc, modelViewMat);
+	skybox.Draw(programId);
 
-	/* Initialize Colour And DRAW FIELD */
-	glUniform1ui(objectLoc, FIELD);  //if (object == FIELD)
-	glBindVertexArray(vao[FIELD]);         // Bind
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // Render Array of triangles 
 
-	/* DRAW SKY */
-	glUniform1ui(objectLoc, SKY);  //if (object == SKY)
-	glBindVertexArray(vao[SKY]);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 
 	// Draw sphere
-	Sphere1.updateModelMatrix(modelViewMatLoc, CamPosX);
-	glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
-	Sphere1.Draw();
+	//Sphere1.updateModelMatrix(modelViewMatLoc, CamPosX);
+	//glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
+	//Sphere1.Draw();
 
 	// Draw Track
 	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -60.0f);
@@ -401,17 +387,25 @@ void drawScene(void)
 	glutSwapBuffers(); // Change buffers when the current window is double buffered.
 }
 
-
-
 /* ANIMATION ROUTINE*/
 void animation() {
 
-	/* update state variables */
-	/* SPHERE */
-	SphereZ = SphereZ - 0.2;
-	if (SphereZ < -25.0) SphereZ = 0.0;
-	Sphere1.SetPosition(vec3(0, 0, SphereZ));
+	zVal = zVal - 0.2;
+	xVal += 0.1;
+	yVal += 0.1;
+	if (zVal < -25.0) zVal = 0.0;
+	if (xVal > 12.0) xVal = -12.0;
+	if (yVal > 12.0) yVal = 0.0;
+	Hover.SetPosition(vec3(xVal, 0, 0)); // Hover Animation Update. 
 
+	/* SPHERE */
+	//SphereZ = SphereZ - 0.2;
+	//if (SphereZ < -25.0) SphereZ = 0.0;
+	//Sphere1.SetPosition(vec3(0, 0, SphereZ));
+
+	//set yVal to vertex shader
+	yValLoc = glGetUniformLocation(programId, "yPos");  //uniform uint object;
+	glUniform1f(yValLoc, yVal);
 
 	/* refresh screen */
 	glutPostRedisplay();
@@ -436,16 +430,6 @@ void keyInput(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
-	case 101: // E Button on Keyboard.
-	// Change texture image of the sky.
-	std::cout << " Key E was pressed" << std::endl;
-	costumnumber = costumnumber == 1 ? 2 : 1; // Change between Numbers.
-
-	// https://www.w3schools.com/cpp/cpp_conditions_shorthand.asp Ternary operator
-	setup(); // Rerun Setup and Replace Do not use Future Project Unnesecary usage,
-	//As All textures have to be reapplied.
-
-	break;
 	case 27: // ESC button.
 		std::cout << " Game has been terminated " << std::endl;
 		exit(0);
@@ -488,9 +472,10 @@ int main(int argc, char** argv)
 	/* Documentation from <http://freeglut.sourceforge.net/docs/api.php>*/
 	glutInitContextVersion(4, 3); // Version 4.3
 	// <https://sites.google.com/site/gsucomputergraphics/educational/initialization-tasks-in-an-opengl-program/opengl-context-and-profile>
+	glutInitContextProfile(GLUT_CORE_PROFILE);
 	glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE); 
 
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutInitWindowSize(1080, 920); // original Size 500, 500 Display Window size
 	glutInitWindowPosition(500, 50); // Specifies the location of the Window 500, 50 Centre Of screen.
 	glutCreateWindow("Graphics Engine Alpha v0.1");

@@ -1,17 +1,16 @@
 #version 430 core
 
 // THese have to be In order See Main.cpp |static enum object| and | static enum buffer|
-#define FIELD 0
-#define SKY 1
-#define SPHERE 2
-#define TRACK 3
-#define HOVER 4
-#define CUBE 5
+
+#define TRACK 0
+#define HOVER 1
+#define SKYBOX 2
 
 // https://learnopengl.com/Getting-started/Shaders
 // Recived From Vertex Shader 
 in vec2 texCoordsExport;
 in vec3 normalExport;
+in vec3 SkytexCoordsExport;
 
 // Sphere Lighting 
 struct Light
@@ -46,49 +45,38 @@ vec3 normal, lightDirection;
 vec4 fAndBDif;
 
 /* Colour Def */
-vec4 fieldTexColor, skyTexColor;
+vec4 fieldTexColor, skyTexColor, woodTexColor;
+
 
 // Pass to Vertex from Uniform
 uniform sampler2D grassTex;    // GRASS TEXTURE
 uniform sampler2D skyTex;      // SKY TEXTURE
+uniform sampler2D woodTex;     // Wood Texture 
+uniform samplerCube skyboxTexture;
 uniform uint object;          // Object on Field
 
 void main(void)
 {
-   // For addition Define In area Vec4 
-   //fieldTexColor = vec4(0.4,0.4,0.4,1.0); // Fixed Colour Gray
+   //vec4(0.4,0.4,0.4,1.0); // Fixed Colour Gray
 
+   /* Note Has to be Declared Under Vec4 .. Colours  And Passed to Vertex*/
    fieldTexColor = texture(grassTex, texCoordsExport);
    skyTexColor = texture(skyTex, texCoordsExport);
+   woodTexColor = texture(woodTex, texCoordsExport);
 
-   if (object == FIELD) 
-   {
-   colorsOut = fieldTexColor;  // Used For Lighting Effects 
-   }
-   if (object == SPHERE) {
-	 normal = normalize(normalExport);
-	 lightDirection = normalize(vec3(light0.coords));
-	 fAndBDif = max(dot(normal, lightDirection), 0.0f) * (light0.difCols * sphereFandB.difRefl); 
-     colorsOut =  vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0); 
-
-    //colorsOut =  vec4(0.0,1.0,0.0, 1.0);  // Fixed Colour 
-   }
-   if (object == SKY) 
-   {
-   colorsOut = skyTexColor;
-   }
    if (object == TRACK) {
-	colorsOut = vec4(1.0,0.0,0.0,1.0);
+	colorsOut = vec4(1.0,0.0,0.0,1.0); // Red
    }
    if (object == HOVER) {
     normal = normalize(normalExport);
-	lightDirection = normalize(vec3(light0.coords));
-	fAndBDif = max(dot(normal, lightDirection), 0.0f) * (light0.difCols * sphereFandB.difRefl); 
-    colorsOut =  vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0);
+    lightDirection = normalize(vec3(light0.coords));
+    fAndBDif = max(dot(normal, lightDirection), 0.0f) * (light0.difCols * sphereFandB.difRefl); 
+    colorsOut =  woodTexColor*vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0);
    }
-   if (object == CUBE)
-   {
-	  colorsOut = vec4(1.0,0.0,0.0,1.0); // Fixed Colour 
-   }
+
+    if (object == SKYBOX) {
+    colorsOut = texture(skyboxTexture, SkytexCoordsExport);
+    //colorsOut = vec4(1.0,0.0,0.0,1.0);
+    }
 
 }
