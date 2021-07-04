@@ -179,6 +179,10 @@ static ImpModel Track("racetrack.obj");
 static ImpModel Hover("spaceship.obj");
 Skybox skybox; // Make an instance of a skybox.
 
+/* SPACESHIP ANIMATION */
+static int turnCar = 0;
+static int moveCar = 0;
+
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
 {
@@ -307,8 +311,8 @@ void setup(void)
 
 	/* BIND SKY TEXTURE */
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture[2]);  // See glGenTextures and TextureList
-	data = SOIL_load_image(TextureList[2].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	glBindTexture(GL_TEXTURE_2D, texture[1]);  // See glGenTextures and TextureList
+	data = SOIL_load_image(TextureList[1].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	SOIL_free_image_data(data);
 
@@ -318,10 +322,10 @@ void setup(void)
 	glUniform1i(skyTexLoc, 1); //send texture to shader
 
 	/* Wood Texture */
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, texture[3]);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, texture[2]);
 
-	data = SOIL_load_image(TextureList[3].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	data = SOIL_load_image(TextureList[2].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	SOIL_free_image_data(data);
 
@@ -350,7 +354,7 @@ void drawScene(void)
 	
 	// Calculate and update modelview matrix.
 	modelViewMat = glm::mat4(1.0);
-	modelViewMat = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 10.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	modelViewMat = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat));
 
 	//Draw SkyBox
@@ -359,22 +363,21 @@ void drawScene(void)
 	skybox.Draw(programId);
 
 
-
-
 	// Draw sphere
 	//Sphere1.updateModelMatrix(modelViewMatLoc, CamPosX);
 	//glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
 	//Sphere1.Draw();
 
 	// Draw Track
-	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -60.0f);
+	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -200.0f, CamPosY); // X Position, size, Distance froM origin. Camera.
 	glUniform1ui(objectLoc, TRACK);  //if (object == TRACK)
 	Track.Draw();
 
 	// Draw Hover
-	Hover.updateModelMatrix(modelViewMatLoc, CamPosX, 1.5f, 0.0f);
+	Hover.updateModelMatrix(modelViewMatLoc, CamPosX, 0.5f, -20.0f, CamPosY);
 	glUniform1ui(objectLoc, HOVER);  //if (object == HOVER)
 	Hover.Draw();
+
 
 	// CUBE NOT DRAWABLE ANYMORE
 	// Consider Adding Shaders in Fragment instead of usual fixed color And Position.
@@ -390,13 +393,10 @@ void drawScene(void)
 /* ANIMATION ROUTINE*/
 void animation() {
 
-	zVal = zVal - 0.2;
-	xVal += 0.1;
-	yVal += 0.1;
-	if (zVal < -25.0) zVal = 0.0;
-	if (xVal > 12.0) xVal = -12.0;
-	if (yVal > 12.0) yVal = 0.0;
-	Hover.SetPosition(vec3(xVal, 0, 0)); // Hover Animation Update. 
+
+	Hover.SetPosition(vec3(0 + turnCar, 0, 0 + moveCar));  // X Axis Movement, Y Up and Down Movement  ? 
+	
+	Track.SetPosition(vec3(0, 0, -100)); // X, Y, Z
 
 	/* SPHERE */
 	//SphereZ = SphereZ - 0.2;
@@ -430,6 +430,26 @@ void keyInput(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
+	// https://community.khronos.org/t/using-glutkeyboardfunc/59946
+	case 'a':
+		std::cout << "durning left" << std::endl;
+		turnCar -= 1;
+		break;
+	case 'd':
+		std::cout << "durning right" << std::endl;
+		turnCar += 1;
+		break;
+	case 'w':
+		std::cout << "Moving Forward" << std::endl;
+		moveCar -= 1;
+		break;
+	case 's':
+		std::cout << "Going Back" << std::endl;
+		moveCar += 1;
+		break;
+	case ' ':
+		std::cout << "Shooting" << std::endl;
+		break;
 	case 27: // ESC button.
 		std::cout << " Game has been terminated " << std::endl;
 		exit(0);
@@ -461,6 +481,7 @@ void specialKeyInput(int key, int x, int y)
 	{
 		if (CamPosY > -50.0) CamPosY -= 0.5;
 	}
+	glutPostRedisplay();
 }
 
 

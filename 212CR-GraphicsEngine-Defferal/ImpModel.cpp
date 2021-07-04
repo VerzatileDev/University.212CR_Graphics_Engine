@@ -16,7 +16,7 @@ ImpModel::ImpModel(const char* name)
 
 ImpModel::~ImpModel()
 {
-	free(VerticesData);
+	free(VerticesData); // If object Out of Bound or Scope, free Resource
 }
 
 void ImpModel::CreateObject(const char* name)
@@ -31,11 +31,13 @@ void ImpModel::CreateObject(const char* name)
 	}
 }
 
+// Check For position on x,y,z
 void ImpModel::SetPosition(glm::vec3 newPos)
 {
 	position = newPos;
 }
 
+// Recheck Position
 glm::vec3 ImpModel::GetPosition(void)
 {
 	return position;
@@ -66,12 +68,13 @@ void ImpModel::Setup()
 
 }
 
-void ImpModel::updateModelMatrix(unsigned int modelViewMatLoc, float CamPosX, float scale, float ZPos)
+void ImpModel::updateModelMatrix(unsigned int modelViewMatLoc, float CamPosX, float scale, float ZPos, float yPos)
 {
 	ModelMatrix = glm::mat4(1.0);
-	ModelMatrix = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 10.0, 0.0), glm::vec3(0.0, 1.0, 0.0)); //camera matrix, apply first
+	ModelMatrix = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 0.0 + yPos, 0.0+ ZPos), glm::vec3(0.0, 1.0, 0.0)); //camera matrix, apply first
 	ModelMatrix = glm::scale(ModelMatrix, glm::vec3(scale, scale, scale));  //scale down the model
-	ModelMatrix = glm::translate(ModelMatrix, glm::vec3(0.0f, 0.0f, ZPos));
+	ModelMatrix = glm::translate(ModelMatrix, glm::vec3(position.x, position.y, position.z)); // Object Position Updates.
+	ModelMatrix = glm::translate(ModelMatrix, GetPosition()); // Recheck Theoretically not Nessecary.
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(ModelMatrix));  //send modelview matrix to the shader
 }
 
@@ -79,9 +82,4 @@ void ImpModel::Draw()
 {
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, NumVert);
-}
-
-void ImpModel::Update(float deltaTime, glm::vec3 offset)
-{
-	//collider->Update(deltaTime, position, offset);
 }

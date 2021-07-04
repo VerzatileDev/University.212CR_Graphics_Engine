@@ -44,10 +44,9 @@ static std::vector<VertexWithAll> loadOBJ(const char* file_name)
 	//file open error check
 	if (!in_file.is_open())
 	{
-		throw "ERROR::OBJLOADER::COULD NOT OPEN FILE.";
+		throw "ERROR :: READING SPECIFIED OBJECT FILE", file_name, "FAIED";
 	}
 
-	//read one line at a time
 	while (std::getline(in_file, line))
 	{
 		//get the prefix of each line
@@ -123,13 +122,10 @@ static std::vector<VertexWithAll> loadOBJ(const char* file_name)
 				//reset the counter
 				if (counter > 2)
 					counter = 0;
-
 			}
-
 		}
 		else
 		{
-
 		}
 
 	}
@@ -147,14 +143,8 @@ static std::vector<VertexWithAll> loadOBJ(const char* file_name)
 		vertices[i].color = glm::vec3(1.f, 1.f, 1.f);
 	}
 
-
-
-
-	//DEBUG ZONE TESTING PURPOSES
-	std::cout << "Nr of vertices: " << vertices.size() << "\n";
-
-
-	//load success
-	std::cout << " obj file loaded!!!" << "\n";
+	// Let Us know Object Vertices :Amount: and if succesful in loading files.
+	std::cout << file_name <<"Supplied with " << vertices.size() << " vertices" <<"\n";
+	std::cout << " Loading ofObject(s) was succesful.. " << "\n";
 	return vertices;
 }

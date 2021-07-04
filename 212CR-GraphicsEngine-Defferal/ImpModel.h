@@ -14,12 +14,10 @@ private:
 
 	unsigned int VAO;
 	unsigned int VBO;
-	unsigned int IBO; //for triangle indices buffer
+	unsigned int IBO;
 
-	int NumVert;
-
+	int NumVert; // Model Total Vertices
 	glm::mat4 ModelMatrix;
-
 	void CreateObject(const char*);
 public:
 	ImpModel(const char*);
@@ -29,10 +27,9 @@ public:
 	glm::vec3 GetPosition(void);
 
 	void SetIDs(unsigned int, unsigned int, unsigned int);
-	void updateModelMatrix(unsigned int, float, float, float);
+	void updateModelMatrix(unsigned int, float, float, float, float);
 
 	void Setup();
 	void Draw();
-	void Update(float, glm::vec3 offset);
 };
 
