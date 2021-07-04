@@ -4,9 +4,10 @@ Object::Object()
 {
 }
 
-Object::Object(glm::vec3 pos)
+Object::Object(glm::vec3 pos, glm::vec3 rot)
 {
 	position = pos;
+	rotation = rot;
 }
 
 Object::~Object()

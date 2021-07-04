@@ -19,7 +19,8 @@ struct VertexWtihNormal
 
 struct  VertexWithAll
 {
-	glm::vec3 position;
+	glm::vec3 position; // Object Position 
+	glm::vec3 rotation; // In order to change the Angle of Spaceship
 	glm::vec3 color;
 	glm::vec2 textcoord;
 	glm::vec3 normal;

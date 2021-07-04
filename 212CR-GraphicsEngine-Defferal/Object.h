@@ -7,10 +7,11 @@ class Object
 {
 public:
 	Object();
-	Object(glm::vec3 pos);
+	Object(glm::vec3 pos, glm::vec3 rot); // Position of object as well as rotation.
 	~Object();
 
 	glm::vec3 position;
+	glm::vec3 rotation;
 
 	//SphereCollider* collider;
 	//SphereCollider* GetCollider();

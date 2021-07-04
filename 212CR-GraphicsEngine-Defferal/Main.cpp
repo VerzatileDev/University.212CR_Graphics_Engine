@@ -40,8 +40,8 @@
 /* VAO and VBO ids*/
 
 // declares object, with types of objects. ( Have to be In order WIth Vertex/Fragment In #Define
-static enum object { TRACK, HOVER, SKYBOX }; // VAO ids.
-static enum buffer { TRACK_VERTICES, HOVER_VERTICES, SKYBOX_VERTICES};
+static enum object { TRACK, HOVER, SKYBOX}; // VAO ids.
+static enum buffer { TRACK_VERTICES, HOVER_VERTICES, SKYBOX_VERTICES,SPHERE};
 
 
 
@@ -182,6 +182,8 @@ Skybox skybox; // Make an instance of a skybox.
 /* SPACESHIP ANIMATION */
 static int turnCar = 0;
 static int moveCar = 0;
+static float angleCar = 0;
+
 
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
@@ -394,9 +396,9 @@ void drawScene(void)
 void animation() {
 
 
-	Hover.SetPosition(vec3(0 + turnCar, 0, 0 + moveCar));  // X Axis Movement, Y Up and Down Movement  ? 
+	Hover.SetPosition(vec3(0 + turnCar, 0, 0 + moveCar), vec3(angleCar, 20, 0));  // X Axis Movement, Y Up and Down Movement  ? 
 	
-	Track.SetPosition(vec3(0, 0, -100)); // X, Y, Z
+	Track.SetPosition(vec3(0, 0, -100), vec3(0, 1, 0)); // X, Y, Z
 
 	/* SPHERE */
 	//SphereZ = SphereZ - 0.2;
@@ -430,14 +432,21 @@ void keyInput(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
-	// https://community.khronos.org/t/using-glutkeyboardfunc/59946
+	/* SPACESHIP movement*/
 	case 'a':
 		std::cout << "durning left" << std::endl;
 		turnCar -= 1;
+		std::cout << turnCar << std::endl;
+		angleCar += 0.2; // Angle with Movement to left
+
 		break;
 	case 'd':
 		std::cout << "durning right" << std::endl;
 		turnCar += 1;
+		std::cout << turnCar << std::endl;
+		angleCar -= 0.2; // Angle with Movement to Right
+
+
 		break;
 	case 'w':
 		std::cout << "Moving Forward" << std::endl;

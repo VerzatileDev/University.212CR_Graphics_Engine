@@ -8,6 +8,7 @@
 ImpModel::ImpModel(const char* name)
 {
 	position = glm::vec3(0);
+	rotation = glm::vec3(0);
 	VAO = VBO = 0;
 	VerticesData = NULL;
 	NumVert = 0;
@@ -32,9 +33,10 @@ void ImpModel::CreateObject(const char* name)
 }
 
 // Check For position on x,y,z
-void ImpModel::SetPosition(glm::vec3 newPos)
+void ImpModel::SetPosition(glm::vec3 newPos, glm::vec3 newrot)
 {
 	position = newPos;
+	rotation = newrot;
 }
 
 // Recheck Position
@@ -71,7 +73,7 @@ void ImpModel::Setup()
 void ImpModel::updateModelMatrix(unsigned int modelViewMatLoc, float CamPosX, float scale, float ZPos, float yPos)
 {
 	ModelMatrix = glm::mat4(1.0);
-	ModelMatrix = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 0.0 + yPos, 0.0+ ZPos), glm::vec3(0.0, 1.0, 0.0)); //camera matrix, apply first
+	ModelMatrix = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 0.0 + yPos, 0.0+ ZPos), glm::vec3(rotation.x, rotation.y, rotation.z)); //camera matrix, apply first
 	ModelMatrix = glm::scale(ModelMatrix, glm::vec3(scale, scale, scale));  //scale down the model
 	ModelMatrix = glm::translate(ModelMatrix, glm::vec3(position.x, position.y, position.z)); // Object Position Updates.
 	ModelMatrix = glm::translate(ModelMatrix, GetPosition()); // Recheck Theoretically not Nessecary.

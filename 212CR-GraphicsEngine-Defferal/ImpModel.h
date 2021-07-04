@@ -23,7 +23,7 @@ public:
 	ImpModel(const char*);
 	~ImpModel();
 
-	void SetPosition(glm::vec3 newPos);
+	void SetPosition(glm::vec3 newPos, glm::vec3 newrot); // Position/ Rotation.
 	glm::vec3 GetPosition(void);
 
 	void SetIDs(unsigned int, unsigned int, unsigned int);
