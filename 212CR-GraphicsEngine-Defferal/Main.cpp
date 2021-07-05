@@ -189,6 +189,7 @@ bool drawsphere = false;
 float spheremove = 0;
 
 float test = 0;
+int state = 1;
 
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
@@ -409,30 +410,48 @@ void drawScene(void)
 	glutSwapBuffers(); // Change buffers when the current window is double buffered.
 }
 
+void timer(int) // Timer For Floating  Track..
+{
+	switch (state) {
+	case 1:
+		if (yVal < 8)
+			yVal += 0.001;
+		else
+			state = -1;
+		break;
+	case -1:
+		if (yVal > -10)
+			yVal -= 0.001;
+		else
+			state = 1;
+		break;
+	}
+
+}
+
 /* ANIMATION ROUTINE*/
 void animation() {
 
 	// Update Object Position / Rotation .
 	Hover.SetPosition(vec3(0 + turnCar, 0, 0 + moveCar), vec3(angleCar, 20, 0.0));// Movement Left/Right, up/down, Forward/Backwards.  ( Angle of SpaceShip) 
-	Track.SetPosition(vec3(0, 0, -100), vec3(0.0,1.0,0.0)); // X, Y, Z Movement,  Angle of it.
-	
+	Track.SetPosition(vec3(0, 0, -100), vec3(0.0, 1.0, 0.0)); // X, Y, Z Movement,  Angle of it.
+
 	// If SpaceBar Is pressed Animated Sphere by position.
 	// When Sphere reaches limit of -500 on Z axis Reset Position and Disable Spheremove.
 	if (drawsphere == true) 	spheremove = spheremove - 0.2;
-	if (spheremove <= -500) 
+	if (spheremove <= -500)
 	{
 		drawsphere = false;
 		spheremove = 0;
 	}
 	sphere.SetPosition(vec3(0, 0, spheremove)); // Initial Starting Position Of the Sphere.
 
+	glutTimerFunc(0, timer, 0);
 
-	/* SPHERE */
-	//SphereZ = SphereZ - 0.2;
-	//if (SphereZ < -25.0) SphereZ = 0.0;
-	//sphere.SetPosition(vec3(0, 0, SphereZ));
+	 // Debug to See position of yVal 
+	//std::cout << yVal << std::endl;
 
-	//set yVal to vertex shader
+	//send  yVal to vertex shader For animation using Shaders
 	yValLoc = glGetUniformLocation(programId, "yPos");  //uniform uint object;
 	glUniform1f(yValLoc, yVal);
 

@@ -29,7 +29,7 @@ layout(location=6) in vec2 objTexCoords;
 uniform mat4 modelViewMat;
 uniform mat4 projMat;
 uniform uint object;
-uniform float yPos;
+uniform float yPos;  // Position of Track Using Shader for element Animation.
 
 // Out means it is Passed Out to NExt Shader  " Fragment Shader "
 out vec2 texCoordsExport;
@@ -45,7 +45,7 @@ void main(void)
    if (object == TRACK)
    {
     coords = vec4(objCoords, 1.0f);
-    //coords.y = coords.y+yPos;
+    coords.y = coords.y+yPos;
     normalExport = objNormals;
     texCoordsExport = objTexCoords;
    }
