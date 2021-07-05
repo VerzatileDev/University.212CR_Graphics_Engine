@@ -63,8 +63,8 @@ void main(void)
     }
     if (object == SPHERE)
     {
-      coords = sphereCoords;
-      normalExport = sphereNormals;
+      coords = sphereCoords;       // Location of The Object 
+      normalExport = sphereNormals; // Sphere Normals 
     }
 
    

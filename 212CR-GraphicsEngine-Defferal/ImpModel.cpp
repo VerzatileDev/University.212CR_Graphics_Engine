@@ -81,7 +81,7 @@ void ImpModel::Setup()
 void ImpModel::updateModelMatrix(unsigned int modelViewMatLoc, float CamPosX, float scale, float ZPos, float yPos)
 {
 	ModelMatrix = glm::mat4(1.0);
-	ModelMatrix = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0 + CamPosX, 0.0 + yPos, 0.0+ ZPos), glm::vec3(rotation.x, rotation.y, rotation.z)); //camera matrix, apply first
+	ModelMatrix = glm::lookAt(glm::vec3(0.0, 10.0, 15), glm::vec3(0.0 + CamPosX, 0.0 + yPos, 0.0+ ZPos), glm::vec3(rotation.x, rotation.y, rotation.z));// To keep It in the Position Of the Scene.
 	ModelMatrix = glm::scale(ModelMatrix, glm::vec3(scale, scale, scale));  //scale down the model
 	ModelMatrix = glm::translate(ModelMatrix, glm::vec3(position.x, position.y, position.z)); // Object Position Updates.
 	ModelMatrix = glm::translate(ModelMatrix, GetPosition()); // Recheck Theoretically not Nessecary.

@@ -47,13 +47,14 @@ vec3 normal, lightDirection;
 vec4 fAndBDif;
 
 /* Colour Def */
-vec4 fieldTexColor, skyTexColor, woodTexColor;
+vec4 fieldTexColor, skyTexColor, specialTexColor, redTexColor;
 
 
 // Pass to Vertex from Uniform
 uniform sampler2D grassTex;    // GRASS TEXTURE
 uniform sampler2D skyTex;      // SKY TEXTURE
-uniform sampler2D woodTex;     // Wood Texture 
+uniform sampler2D cosmosTex;     // Wood Texture
+uniform sampler2D redTex;
 uniform samplerCube skyboxTexture;
 uniform uint object;          // Object on Field
 
@@ -61,19 +62,21 @@ void main(void)
 {
    //vec4(0.4,0.4,0.4,1.0); // Fixed Colour Gray
 
-   /* Note Has to be Declared Under Vec4 .. Colours  And Passed to Vertex*/
+   /* Note Has to be Declared Under Vec4 Colour Def  And Passed to Vertex*/
    fieldTexColor = texture(grassTex, texCoordsExport);
    skyTexColor = texture(skyTex, texCoordsExport);
-   woodTexColor = texture(woodTex, texCoordsExport);
+   specialTexColor = texture(cosmosTex, texCoordsExport);
+   redTexColor = texture(redTex, texCoordsExport);
+
 
    if (object == TRACK) {
-	colorsOut = vec4(1.0,0.0,0.0,1.0); // Red
+	colorsOut = specialTexColor; // Red
    }
    if (object == HOVER) {
     normal = normalize(normalExport);
     lightDirection = normalize(vec3(light0.coords));
     fAndBDif = max(dot(normal, lightDirection), 0.0f) * (light0.difCols * sphereFandB.difRefl); 
-    colorsOut =  woodTexColor*vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0);
+    colorsOut =  redTexColor*vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0);
    }
 
     if (object == SKYBOX) {

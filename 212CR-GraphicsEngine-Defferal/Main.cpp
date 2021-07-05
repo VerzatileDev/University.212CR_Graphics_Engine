@@ -132,7 +132,7 @@ static glm::mat4 projMat(1.0f);
 static glm::mat3 normalMat = glm::mat3(1.0); // Normalization of Camera
 
 //Program Location " Used to Set Shaders and Send Data for them.
-unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc, yValLoc, grassTexLoc, skyTexLoc, woodTexLoc;
+unsigned int programId, vertexShaderId, fragmentShaderId, modelViewMatLoc, projMatLoc, objectLoc, yValLoc, grassTexLoc, skyTexLoc, cosmosTexLoc, redTexLoc;
 
 
 /* VBO (BUFFER) VAO and textures  ( INCRESE WITH NEW OBJECTS )*/
@@ -150,7 +150,8 @@ static Sphere sphere; // instance of a sphere..
 std::string TextureList[] = {
 	"Textures/grass.bmp",
 	"Textures/sky.bmp",
-	 "Textures/wood.png",
+	 "Textures/cosmos.png",
+	  "Textures/red.png",
 };
 
 
@@ -164,7 +165,7 @@ static float zVal = 0; // Z Co-ordinates of the ball.
 static float xVal = 0; // X Co-ordinates of the hover.
 static float yVal = 0; // Y Co-ordinates of the track.
 static float CamPosX = 0.0; //Camera position
-static float CamPosY = 0.0;
+static float CamPosY = 7.0;
 
 // YAW AND PITCH DEFINITIONS 
 float cameraYaw = 90;
@@ -184,6 +185,10 @@ static int turnCar = 0;
 static int moveCar = 0;
 static float angleCar = 0;
 
+bool drawsphere = false;
+float spheremove = 0;
+
+float test = 0;
 
 /* PROJECT's Initializaiton ( Set Before the start of the game ) */
 void setup(void)
@@ -266,8 +271,8 @@ void setup(void)
 
 	/* Texture Names At Global*/
 	// Checks textures inside TextureList[] takes size, and generates Textures.
-	int texSize = sizeof(TextureList) / sizeof(TextureList[0]);
-	glGenTextures(texSize, texture);
+	int texSize = sizeof(TextureList) / sizeof(TextureList[0]); // This Breaks Do Not Add !!
+	glGenTextures(3, texture);
 
 
 	/* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml Reference */
@@ -298,6 +303,7 @@ void setup(void)
 	/* BIND SKY TEXTURE */
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture[1]);  // See glGenTextures and TextureList
+
 	data = SOIL_load_image(TextureList[1].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	SOIL_free_image_data(data);
@@ -307,7 +313,7 @@ void setup(void)
 	skyTexLoc = glGetUniformLocation(programId, "skyTex");
 	glUniform1i(skyTexLoc, 1); //send texture to shader
 
-	/* Wood Texture */
+	/* Cosmos Texture */
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, texture[2]);
 
@@ -320,8 +326,25 @@ void setup(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glGenerateMipmap(GL_TEXTURE_2D);
-	woodTexLoc = glGetUniformLocation(programId, "woodTex");
-	glUniform1i(woodTexLoc, 2); //send texture to shader
+	cosmosTexLoc = glGetUniformLocation(programId, "cosmosTex"); // cosmosTex To take in at Vertex
+	glUniform1i(cosmosTexLoc, 2); //send texture to shader
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, texture[3]);
+
+	data = SOIL_load_image(TextureList[3].c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	SOIL_free_image_data(data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	redTexLoc = glGetUniformLocation(programId, "redTex");
+	glUniform1i(redTexLoc, 3); //send texture to shader
+
+
 
 
     /* GENERATE SKYBOX Buffers vaos set textures */
@@ -342,8 +365,8 @@ void drawScene(void)
 	/* Indicates which Values are to be Cleared  " Takes one/ Several Values" */
 	// Clear Colour Buffers at the start of the Frame 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	// Calculate and update modelview matrix.
+
+	// Calculate and update modelview matrix.  Of The Camera. 
 	modelViewMat = glm::mat4(1.0);
 	modelViewMat = glm::lookAt(glm::vec3(0.0, 10.0, 15.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(modelViewMat));
@@ -353,9 +376,10 @@ void drawScene(void)
 	skybox.SetViewMatrix(modelViewMatLoc, modelViewMat);
 	skybox.Draw(programId);
 
+	// CamPosx and CamPosY meaning that Elements Stay in their Relative Position On X and Z Axis Of the Screen.
 
 	// Draw Track
-	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -200.0f, CamPosY); // X Position, size, Distance froM origin. Camera.
+	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -200.0f, CamPosY); // X Position, size, Distance froM origin. Camera, height
 	glUniform1ui(objectLoc, TRACK);  //if (object == TRACK)
 	Track.Draw();
 
@@ -364,11 +388,13 @@ void drawScene(void)
 	glUniform1ui(objectLoc, HOVER);  //if (object == HOVER)
 	Hover.Draw();
 
-	// Draw sphere
-	sphere.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f); // D here keeps it on the Position so It does not move from the camera. 
-	glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
-	sphere.Draw();
-
+	// Gets Called When Ever SpaceBar is Pressed. 
+	if (drawsphere == true)
+	{
+		sphere.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f); // D here keeps it on the Position so It does not move from the camera. 
+		glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
+		sphere.Draw();
+	}
 
 
 
@@ -387,9 +413,18 @@ void drawScene(void)
 void animation() {
 
 	// Update Object Position / Rotation .
-	Hover.SetPosition(vec3(0 + turnCar, 0, 0 + moveCar), vec3(angleCar, 20, 0));  // X Axis Movement, Y Up and Down Movement  ? 
-	Track.SetPosition(vec3(0, 0, -100), vec3(0, 1, 0)); // X, Y, Z
-	sphere.SetPosition(vec3(0, 0, -50)); // Initial Starting Position Of the Sphere.
+	Hover.SetPosition(vec3(0 + turnCar, 0, 0 + moveCar), vec3(angleCar, 20, 0.0));// Movement Left/Right, up/down, Forward/Backwards.  ( Angle of SpaceShip) 
+	Track.SetPosition(vec3(0, 0, -100), vec3(0.0,1.0,0.0)); // X, Y, Z Movement,  Angle of it.
+	
+	// If SpaceBar Is pressed Animated Sphere by position.
+	// When Sphere reaches limit of -500 on Z axis Reset Position and Disable Spheremove.
+	if (drawsphere == true) 	spheremove = spheremove - 0.2;
+	if (spheremove <= -500) 
+	{
+		drawsphere = false;
+		spheremove = 0;
+	}
+	sphere.SetPosition(vec3(0, 0, spheremove)); // Initial Starting Position Of the Sphere.
 
 
 	/* SPHERE */
@@ -404,7 +439,7 @@ void animation() {
 	/* refresh screen */
 	glutPostRedisplay();
 }
-/* OpenGL window reshape routine.*/
+/*OpenGL window reshape routine.*/
 void resize(int w, int h)
 {
 	glViewport(0, 0, w, h); // Specifies the part of the Window to which OpenGl, WIll draw in pixels
@@ -429,14 +464,14 @@ void keyInput(unsigned char key, int x, int y)
 		std::cout << "durning left" << std::endl;
 		turnCar -= 1;
 		std::cout << turnCar << " Angle left " << std::endl;
-		angleCar += 0.2; // Angle with Movement to left
+		angleCar += 0.5; // Angle with Movement to left
 
 		break;
 	case 'd':
 		std::cout << "durning right" << std::endl;
 		turnCar += 1;
 		std::cout << turnCar << " Angle right " << std::endl;
-		angleCar -= 0.2; // Angle with Movement to Right
+		angleCar -= 0.5; // Angle with Movement to Right
 
 
 		break;
@@ -449,7 +484,13 @@ void keyInput(unsigned char key, int x, int y)
 		moveCar += 1;
 		break;
 	case ' ':
-		std::cout << "Shooting" << std::endl;
+		drawsphere = true;
+		if (drawsphere == true && spheremove == 0) {
+			std::cout << "Shooting" << std::endl;
+		}
+		break;
+	case 'b':
+		test += 0.1;
 		break;
 	case 27: // ESC button.
 		std::cout << " Game has been terminated " << std::endl;
