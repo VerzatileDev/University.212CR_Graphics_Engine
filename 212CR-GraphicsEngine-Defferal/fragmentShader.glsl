@@ -4,7 +4,9 @@
 
 #define TRACK 0
 #define HOVER 1
-#define SKYBOX 2
+#define SPHERE 2
+#define SKYBOX 3
+
 
 // https://learnopengl.com/Getting-started/Shaders
 // Recived From Vertex Shader 
@@ -78,5 +80,11 @@ void main(void)
     colorsOut = texture(skyboxTexture, SkytexCoordsExport);
     //colorsOut = vec4(1.0,0.0,0.0,1.0);
     }
+     if (object == SPHERE) {
+    normal = normalize(normalExport);
+	lightDirection = normalize(vec3(light0.coords));
+	fAndBDif = max(dot(normal, lightDirection), 0.0f) * (light0.difCols * sphereFandB.difRefl); 
+    colorsOut =  vec4(vec3(min(fAndBDif, vec4(1.0))), 1.0);
+   }
 
 }

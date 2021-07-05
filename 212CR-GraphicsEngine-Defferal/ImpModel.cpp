@@ -44,7 +44,7 @@ glm::vec3 ImpModel::GetPosition(void)
 {
 	return position;
 }
-
+// Set Buffer IDs To be Used on Shader through Main declaration see Buffer/ Object at the Global Area
 void ImpModel::SetIDs(unsigned int vao, unsigned int vbo, unsigned int ibo)
 {
 	VAO = vao;
@@ -58,15 +58,23 @@ void ImpModel::Setup()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexWithAll) * NumVert, VerticesData, GL_STATIC_DRAW);  ///please note the change
 
-	// Object Coordinates
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(VertexWithAll), (GLvoid*)offsetof(VertexWithAll, position));
-	glEnableVertexAttribArray(2);
-	// objNormals
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(VertexWithAll), (GLvoid*)offsetof(VertexWithAll, normal));
-	glEnableVertexAttribArray(3);
-	// objTexCoords
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(VertexWithAll), (GLvoid*)offsetof(VertexWithAll, textcoord));
+	// GlVertex Attribute Pointer 
+	// index - Specifies the index of the generic vertex attribute to be enabled or disabled.
+	// Size - Number of Components per generic Vertex Attribute ( Must be 1,2,3,4) Initial = 4
+	// Type - of each component in Array
+	// Normalized - GL_True When Fixed Point,  False when Accessed.
+	// Stride - Specofies the byte offset Between Consecutive generic Vertex Attributes (Default 0)
+	// Pointer - Specofies offset of first component. (Initial Value 0 ) GL_Array_buffer Target.
+
+	// Activate Layout Object Coordinates At Vertex Shader.
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(VertexWithAll), (GLvoid*)offsetof(VertexWithAll, position));
 	glEnableVertexAttribArray(4);
+	// Activate Layout objNormals
+	glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(VertexWithAll), (GLvoid*)offsetof(VertexWithAll, normal));
+	glEnableVertexAttribArray(5);
+	// Activate Layout objTexCoords
+	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(VertexWithAll), (GLvoid*)offsetof(VertexWithAll, textcoord));
+	glEnableVertexAttribArray(6);
 
 }
 

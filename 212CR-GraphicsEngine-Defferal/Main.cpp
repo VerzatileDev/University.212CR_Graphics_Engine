@@ -40,8 +40,8 @@
 /* VAO and VBO ids*/
 
 // declares object, with types of objects. ( Have to be In order WIth Vertex/Fragment In #Define
-static enum object { TRACK, HOVER, SKYBOX}; // VAO ids.
-static enum buffer { TRACK_VERTICES, HOVER_VERTICES, SKYBOX_VERTICES,SPHERE};
+static enum object { TRACK,  HOVER, SPHERE, SKYBOX}; // VAO ids.
+static enum buffer { TRACK_VERTICES , HOVER_VERTICES, SPHERE_VERTICES, SPHERE_INDICES, SKYBOX_VERTICES};
 
 
 
@@ -140,6 +140,11 @@ unsigned int buffer[3];
 unsigned int vao[3];
 unsigned int texture[4];
 
+/* Sphere Vertices, Normals, Triangle indices */
+static VertexWtihNormal* sphereVerticesNor = NULL;
+static unsigned int* sphereIndices = NULL;
+static Sphere sphere; // instance of a sphere..
+
 
 // Specify Texture Location.
 std::string TextureList[] = {
@@ -167,11 +172,6 @@ float cameraPitch;
 glm::vec3 cameraPosition = glm::vec3(0, 0, 0);
 glm::vec3 cameraForward = glm::vec3(0.0, 0.0, 15.0);
 
-
-/* Sphere Vertices, Normals, Triangle indices */
-static VertexWtihNormal* sphereVerticesNor = NULL;
-static unsigned int* sphereIndices = NULL;
-//static Sphere Sphere1;
 
 
 /* Object Imports*/
@@ -244,16 +244,6 @@ void setup(void)
 	std::cout << " Binding VAO and VBO" << std::endl;
 	
 
-	// Sets Singular Array of generic vertex Attribute Data
-	// index - Specifies the index of the generic vertex attribute to be enabled or disabled.
-	// Size - Number of Components per generic Vertex Attribute ( Must be 1,2,3,4) Initial = 4
-	// Type - of each component in Array
-	// Normalized - GL_True When Fixed Point,  False when Accessed.
-	// Stride - Specofies the byte offset Between Consecutive generic Vertex Attributes (Default 0)
-	// Pointer - Specofies offset of first component. (Initial Value 0 ) GL_Array_buffer Target.
-
-	
-
 	/*RACETRACK BINDING */ // Remember Adds another glGenVertexArrays 
 	glGenBuffers(1, &buffer[TRACK_VERTICES]);
 	Track.SetIDs(vao[TRACK], buffer[TRACK_VERTICES], 0);
@@ -264,13 +254,7 @@ void setup(void)
 	Hover.SetIDs(vao[HOVER], buffer[HOVER_VERTICES], 0);
 	Hover.Setup();
 
-
-	//Binding VAO and VBO
-	//Sphere1.SetIDs(vao[SPHERE], buffer[SPHERE_VERTICES], buffer[SPHERE_INDICES]);
-	//Sphere1.Setup();
-
-
-
+	
 	// Obtain projection matrix uniform location and set value.
 	projMatLoc = glGetUniformLocation(programId, "projMat"); //uniform mat4 projMat;
 	projMat = perspective(radians(60.0), 1.0, 0.1, 1000.0);
@@ -345,6 +329,11 @@ void setup(void)
 	skybox.InitialiseSkybox(vao[SKYBOX], buffer[SKYBOX_VERTICES]);
 	skybox.InitialiseCubeMap(programId, texture[3]);
 
+	//Binding VAO and VBO
+	sphere.SetIDs(vao[SPHERE], buffer[SPHERE_VERTICES], buffer[SPHERE_INDICES]);
+	sphere.Setup();
+
+
 }
 
 /* Scene Drawables Routine*/
@@ -365,11 +354,6 @@ void drawScene(void)
 	skybox.Draw(programId);
 
 
-	// Draw sphere
-	//Sphere1.updateModelMatrix(modelViewMatLoc, CamPosX);
-	//glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
-	//Sphere1.Draw();
-
 	// Draw Track
 	Track.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f, -200.0f, CamPosY); // X Position, size, Distance froM origin. Camera.
 	glUniform1ui(objectLoc, TRACK);  //if (object == TRACK)
@@ -379,6 +363,13 @@ void drawScene(void)
 	Hover.updateModelMatrix(modelViewMatLoc, CamPosX, 0.5f, -20.0f, CamPosY);
 	glUniform1ui(objectLoc, HOVER);  //if (object == HOVER)
 	Hover.Draw();
+
+	// Draw sphere
+	sphere.updateModelMatrix(modelViewMatLoc, CamPosX, 0.2f); // D here keeps it on the Position so It does not move from the camera. 
+	glUniform1ui(objectLoc, SPHERE);  //if (object == SPHERE)
+	sphere.Draw();
+
+
 
 
 	// CUBE NOT DRAWABLE ANYMORE
@@ -395,15 +386,16 @@ void drawScene(void)
 /* ANIMATION ROUTINE*/
 void animation() {
 
-
+	// Update Object Position / Rotation .
 	Hover.SetPosition(vec3(0 + turnCar, 0, 0 + moveCar), vec3(angleCar, 20, 0));  // X Axis Movement, Y Up and Down Movement  ? 
-	
 	Track.SetPosition(vec3(0, 0, -100), vec3(0, 1, 0)); // X, Y, Z
+	sphere.SetPosition(vec3(0, 0, -50)); // Initial Starting Position Of the Sphere.
+
 
 	/* SPHERE */
 	//SphereZ = SphereZ - 0.2;
 	//if (SphereZ < -25.0) SphereZ = 0.0;
-	//Sphere1.SetPosition(vec3(0, 0, SphereZ));
+	//sphere.SetPosition(vec3(0, 0, SphereZ));
 
 	//set yVal to vertex shader
 	yValLoc = glGetUniformLocation(programId, "yPos");  //uniform uint object;
@@ -436,14 +428,14 @@ void keyInput(unsigned char key, int x, int y)
 	case 'a':
 		std::cout << "durning left" << std::endl;
 		turnCar -= 1;
-		std::cout << turnCar << std::endl;
+		std::cout << turnCar << " Angle left " << std::endl;
 		angleCar += 0.2; // Angle with Movement to left
 
 		break;
 	case 'd':
 		std::cout << "durning right" << std::endl;
 		turnCar += 1;
-		std::cout << turnCar << std::endl;
+		std::cout << turnCar << " Angle right " << std::endl;
 		angleCar -= 0.2; // Angle with Movement to Right
 
 

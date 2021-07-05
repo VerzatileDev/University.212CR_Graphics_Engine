@@ -6,8 +6,8 @@
 /* Structure for Combining Vertex and Colour Data*/
 struct Vertex
 {
-	glm::vec4 coords;
-	glm::vec2 texCoords;
+	glm::vec4 coords;   // Coordinates of Element
+	glm::vec2 texCoords; // Elements Texture location
 };
 
 /* Structure of Normalized form of vertex.*/
@@ -21,7 +21,7 @@ struct  VertexWithAll
 {
 	glm::vec3 position; // Object Position 
 	glm::vec3 rotation; // In order to change the Angle of Spaceship
-	glm::vec3 color;
+	glm::vec3 color;    // Specify the Colour Used for the element At Shaders.
 	glm::vec2 textcoord;
 	glm::vec3 normal;
 };

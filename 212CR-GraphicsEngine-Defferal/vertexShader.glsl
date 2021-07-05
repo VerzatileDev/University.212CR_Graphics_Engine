@@ -6,19 +6,23 @@
 // THese have to be In order See Main.cpp |static enum object| and | static enum buffer|
 #define TRACK 0
 #define HOVER 1
-#define SKYBOX 2
+#define SPHERE 2
+#define SKYBOX 3
 
 
 // Locations of Data Sent by glVertexAttribPointer And Activated by glEnableVertexAttribArray
 layout(location=0) in vec3 skyCoords; // SKY coordinates 
 layout(location=1) in vec3 skyNormals;
-// OBJECT DATA LOCATION, NORMALS, TEXCOORDS
-layout(location=2) in vec3 objCoords;
-layout(location=3) in vec3 objNormals;
-layout(location=4) in vec2 objTexCoords;
 
-layout(location=5) in vec4 sphereCoords;
-layout(location=6) in vec3 sphereNormals;
+layout(location=2) in vec4 sphereCoords;
+layout(location=3) in vec3 sphereNormals;
+
+// OBJECT DATA LOCATION, NORMALS, TEXCOORDS
+layout(location=4) in vec3 objCoords;
+layout(location=5) in vec3 objNormals;
+layout(location=6) in vec2 objTexCoords;
+
+
 
 // Declared at Main Under Static Globals area 
 // Uniform Pass by glUniformMatrix4fv
@@ -56,6 +60,11 @@ void main(void)
         SkytexCoordsExport = skyCoords;
         coords = vec4(skyCoords, 1.0);
         //coords = skyCoords;
+    }
+    if (object == SPHERE)
+    {
+      coords = sphereCoords;
+      normalExport = sphereNormals;
     }
 
    

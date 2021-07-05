@@ -3,6 +3,6 @@
 
 // fragmentShaderId = setShader("fragment", "fragmentShader.glsl"); // Example In Create Sphere
 int setShader(const char* shaderType, const char* shaderFile);
-char* readTextFile(const char* aTextFile); // Added From SKybox 
+char* readTextFile(const char* aTextFile); // Added to Read Information Data of Skybox. 
 
 #endif

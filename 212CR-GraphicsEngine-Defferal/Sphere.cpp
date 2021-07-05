@@ -86,17 +86,19 @@ void Sphere::Setup()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexWtihNormal) * verCount, sphereVerticesNor, GL_STATIC_DRAW);  ///please note the change
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * triCount, sphereIndices, GL_STATIC_DRAW); ///please note the change
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), 0);  //layout(location=4) in vec4 fieldCoords;
-	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
-	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), 0);  //layout(location=4) in vec4 fieldCoords;
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(sphereVerticesNor[0]), (GLvoid*)sizeof(sphereVerticesNor[0].normals));
+	glEnableVertexAttribArray(3);
 }
 
-void Sphere::updateModelMatrix(unsigned int modelViewMatLoc, float d)
+void Sphere::updateModelMatrix(unsigned int modelViewMatLoc, float CamPosX, float scale)
 {
+	// CamPosx Keeps the Ball on the same Axis when Rotation is apply by Arrow Keys to left/right.
 	ModelMatrix = mat4(1.0);
-	ModelMatrix = lookAt(vec3(0.0, 10.0, 15.0), vec3(0.0 + d, 10.0, 0.0), vec3(0.0, 1.0, 0.0));
-	ModelMatrix = glm::translate(ModelMatrix, position); //apply Sphere Position
+	ModelMatrix = lookAt(vec3(0.0, 10.0, 15.0), vec3(0.0 + CamPosX, 10.0, 0.0), vec3(0.0, 1.0, 0.0));
+	ModelMatrix = glm::scale(ModelMatrix, glm::vec3(scale, scale, scale)); // Apply Correct Scaling Of sphere
+	ModelMatrix = glm::translate(ModelMatrix, glm::vec3(position.x, position.y, position.z)); //apply Sphere Position
 	glUniformMatrix4fv(modelViewMatLoc, 1, GL_FALSE, value_ptr(ModelMatrix));  //send modelview matrix to the shader
 }
 
@@ -124,7 +126,7 @@ void Sphere::SetPosition(vec3 newPos)
 {
 	position = newPos;
 }
-// Retrives Position of the Sphere at that moment.
+
 vec3 Sphere::GetPosition(void)
 {
 	return position;
